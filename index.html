@@ -175,6 +175,9 @@ table.tabla input,table.tabla textarea{border:1px solid var(--line);background:v
 .item.ev{border-left-color:var(--brand)}
 .item a.tit{color:var(--brand-text)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap}
+.nav a{min-width:0}
+@media (max-width:520px){.nav a{font-size:.62rem;letter-spacing:-.01em}.nav svg{width:20px;height:20px}}
+.tabla{overflow:auto}.tabla table{border-collapse:collapse;font-size:.82rem}.tabla td{border:1px solid var(--line);padding:4px 8px;vertical-align:top;white-space:nowrap}
 .prop{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
 .inl{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 10px;min-height:42px;width:100%}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
@@ -710,20 +713,20 @@ function setPath(o,path,v){const ks=path.split('.');let c=o;for(let i=0;i<ks.len
 function conTimeout(p,ms){return Promise.race([p,new Promise((_,r)=>setTimeout(()=>r({code:'timeout'}),ms))])}
 function lum(hex){const h=String(hex||'#000').replace('#','');const c=[0,2,4].map(i=>parseInt(h.substr(i,2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));return .2126*c[0]+.7152*c[1]+.0722*c[2]}
 function oscurecer(hex,k){const h=String(hex).replace('#','');return '#'+[0,2,4].map(i=>Math.round(parseInt(h.substr(i,2),16)*k).toString(16).padStart(2,'0')).join('')}
-const ICON={agenda:'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',hoy:'M3 11l9-8 9 8M5 10v10h14V10',plazos:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2',oficios:'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',actas:'M4 6h16M4 12h10M4 18h7M15 17l2 2 4-4',perfil:'M12 3l9 5-9 5-9-5 9-5zM6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5',mic:'M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3',plus:'M12 5v14M5 12h14',cal:'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',down:'M12 4v11M7 11l5 5 5-5M5 20h14',copy:'M9 9h11v11H9zM5 15V4h11',check:'M5 12l5 5 9-10',trash:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',ia:'M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z',back:'M15 5l-7 7 7 7',send:'M4 12l16-8-6 16-3-6z'};
+const ICON={agenda:'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',hoy:'M3 11l9-8 9 8M5 10v10h14V10',plazos:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2',oficios:'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',actas:'M4 6h16M4 12h10M4 18h7M15 17l2 2 4-4',perfil:'M12 3l9 5-9 5-9-5 9-5zM6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5',personal:'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c0-3.4 2.9-5.5 6.5-5.5s6.5 2.1 6.5 5.5M16 4.3a3.5 3.5 0 0 1 0 6.6M17.8 14.8c2.2.7 3.7 2.5 3.7 5.2',reporte:'M3 20h18M6 20v-8M11 20V5M16 20v-6M21 20V9',mic:'M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3',plus:'M12 5v14M5 12h14',cal:'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',down:'M12 4v11M7 11l5 5 5-5M5 20h14',copy:'M9 9h11v11H9zM5 15V4h11',check:'M5 12l5 5 9-10',trash:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',ia:'M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z',back:'M15 5l-7 7 7 7',send:'M4 12l16-8-6 16-3-6z'};
 const ic=n=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+ICON[n]+'"/></svg>';
 let toastT;function toast(m){let t=$('#toast');if(!t){t=document.createElement('div');t.id='toast';t.className='toast';t.setAttribute('role','status');document.body.appendChild(t)}t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},3800)}
 
 /* ============ estado y datos base ============ */
 const PERFIL_BASE={nombre:'ESCUELA EJEMPLO',linea2:'Sostenedor  ·  Localidad',telefono:'',correo:'',localidad:'Localidad',
   director:'SR(A). NOMBRE DIRECTOR(A)',cargo:'DIRECTOR(A) ESCUELA EJEMPLO',iniciales:'',
-  colores:{primario:'#2f5d7c',oscuro:'#1e3d52',acento:'#e0a526'},siguienteOficio:1,calendarios:[],calDefecto:'',contactos:[],
+  colores:{primario:'#2f5d7c',oscuro:'#1e3d52',acento:'#e0a526'},rbd:'',siguienteOficio:1,calendarios:[],calDefecto:'',contactos:[],
   destinatarios:[{nombre:'SR(A). NOMBRE JEFE(A) DAEM',cargo:'JEFE(A) DAEM'}],
   areas:['Dirección','UTP','Inspectoría','PIE','Varios'],nomina:[],
   tiposActa:['Consejo Técnico','Consejo de Profesores','Consejo Escolar','Equipo Directivo','Entrevista con apoderado','Reunión con sostenedor']};
-const S={cargando:true,perfil:JSON.parse(JSON.stringify(PERFIL_BASE)),plazos:[],oficios:[],actas:[],eventos:[],docs:[],cumples:[],correos:[],puente:null,logo:null,firma:null,ed:null,filtro:'pendientes',tab:'eventos',nota:'',prop:null,ia:null,dict:null,dl:null,mcp:null};
-const CLAVES=['perfil','plazos','oficios','actas','logo','firma','eventos','docs','cumples','correos','puente'];
-const LISTAS=['plazos','oficios','actas','eventos','docs','cumples','correos'];
+const S={cargando:true,perfil:JSON.parse(JSON.stringify(PERFIL_BASE)),plazos:[],oficios:[],actas:[],eventos:[],docs:[],cumples:[],correos:[],plantillas:[],registros:[],libros:{personal:null,reporte:null},tabP:'resumen',busP:'',semR:'',puente:null,logo:null,firma:null,ed:null,filtro:'pendientes',tab:'eventos',nota:'',prop:null,ia:null,dict:null,dl:null,mcp:null};
+const CLAVES=['perfil','plazos','oficios','actas','logo','firma','eventos','docs','cumples','correos','puente','plantillas','registros'];
+const LISTAS=['plazos','oficios','actas','eventos','docs','cumples','correos','plantillas','registros'];
 
 /* ============ guardado: cuenta (privado por persona) o este dispositivo ============ */
 const Store={modo:'sesion',db:null,uidv:null,user:null,t:{},cola:{},
@@ -889,14 +892,14 @@ function filaPend(it){
 }
 
 /* ============ vistas ============ */
-const VISTAS=[['hoy','Hoy'],['agenda','Agenda'],['oficios','Oficios'],['actas','Actas'],['perfil','Perfil']];
+const VISTAS=[['hoy','Hoy'],['agenda','Agenda'],['oficios','Oficios'],['actas','Actas'],['personal','Personal'],['reporte','Reporte'],['perfil','Perfil']];
 function vistaActual(){let h=(location.hash||'').replace('#','');if(h==='plazos')h='agenda';return VISTAS.some(v=>v[0]===h)?h:'hoy'}
 function pintarNav(){const v=vistaActual();$('#nav').innerHTML=VISTAS.map(x=>'<a href="#'+x[0]+'"'+(x[0]===v?' aria-current="page"':'')+'>'+ic(x[0])+'<span>'+x[1]+'</span></a>').join('')}
 function render(){
   pintarNav();
   if(S.cargando){$('#main').innerHTML='<div class="card"><p class="muted">Cargando tus datos…</p></div>';return}
   const v=vistaActual();
-  $('#main').innerHTML=v==='hoy'?vHoy():v==='agenda'?vAgenda():v==='oficios'?(S.ed&&S.ed.t==='oficio'?vOficioEd():vOficios()):v==='actas'?(S.ed&&S.ed.t==='acta'?vActaEd():vActas()):vPerfil();
+  $('#main').innerHTML=v==='hoy'?vHoy():v==='agenda'?vAgenda():v==='oficios'?(S.ed&&S.ed.t==='oficio'?vOficioEd():vOficios()):v==='actas'?(S.ed&&S.ed.t==='acta'?vActaEd():vActas()):v==='personal'?vPersonal():v==='reporte'?vReporte():vPerfil();
   if(S.ed)refrescarPrevia();
 }
 function hayEjemplos(){return S.plazos.some(x=>x.ejemplo)||S.oficios.some(x=>x.ejemplo)||S.actas.some(x=>x.ejemplo)||S.eventos.some(x=>x.ejemplo)}
@@ -914,7 +917,7 @@ function vHoy(){
     '<p class="small muted">En el teléfono también puedes dictar con el micrófono del teclado. Todavía no se pueden cargar archivos de audio.</p>'+
     '<div class="row"><button class="btn pri needs-ia" data-a="nv-ia">'+ic('ia')+'Interpretar con IA</button><button class="btn" data-a="nv-evento">'+ic('agenda')+'Evento</button><button class="btn" data-a="nv-pendiente">'+ic('plazos')+'Pendiente</button><button class="btn" data-a="nv-acta">'+ic('actas')+'Acta</button></div></div>'+
     (cu.length?'<div class="card"><h2>Cumpleaños de la semana</h2><div class="lista">'+cu.map(x=>'<div class="item ev"><div class="cuerpo"><span class="tit">'+esc(x.c.nombre)+'</span><div class="small"><b>'+cuando(x.f)+'</b> · '+x.c.dia+' de '+MESES[x.c.mes-1]+(x.c.grupo?' · '+esc(x.c.grupo):'')+'</div></div></div>').join('')+'</div></div>':'')+
-    htmlCorreosHoy()+'<div class="card"><div class="row between"><h2>Lo que viene</h2><a class="btn sm" href="#agenda">Ver agenda</a></div><div class="lista">'+(L.length?L.slice(0,8).map(filaPend).join(''):'<p class="muted">No tienes pendientes ni eventos registrados.</p>')+'</div></div>';
+    htmlLibrosHoy()+htmlCorreosHoy()+'<div class="card"><div class="row between"><h2>Lo que viene</h2><a class="btn sm" href="#agenda">Ver agenda</a></div><div class="lista">'+(L.length?L.slice(0,8).map(filaPend).join(''):'<p class="muted">No tienes pendientes ni eventos registrados.</p>')+'</div></div>';
 }
 
 function vAgenda(){
@@ -965,9 +968,9 @@ const EST={borrador:['n','Borrador'],enviado:['warn','Enviado, sin respuesta'],r
 function pillE(e){const x=EST[e]||EST.borrador;return '<span class="pill '+x[0]+'">'+x[1]+'</span>'}
 function vOficios(){
   const L=S.oficios.slice().sort((a,b)=>(b.anio-a.anio)||(Number(b.numero)-Number(a.numero)));
-  return '<div class="row between"><h1>Oficios</h1><div class="row"><button class="btn pri" data-a="nuevo-oficio" data-tipo="ordinario">'+ic('plus')+'Oficio ordinario</button><button class="btn" data-a="nuevo-oficio" data-tipo="amp">'+ic('plus')+'Medida de protección</button></div></div>'+
+  return '<div class="row between"><h1>Oficios</h1><div class="row"><button class="btn pri" data-a="nuevo-oficio" data-tipo="ordinario">'+ic('plus')+'Oficio ordinario</button><button class="btn" data-a="nuevo-oficio" data-tipo="amp">'+ic('plus')+'Medida de protección</button>'+(S.plantillas.length?'<button class="btn" data-a="pl-elegir">'+ic('plus')+'Desde plantilla</button>':'')+'</div></div>'+
     '<p class="muted small">Libro de oficios '+hoyISO().slice(0,4)+'. Próximo número disponible: <b>'+siguienteNumero(Number(hoyISO().slice(0,4)))+'</b></p>'+
-    '<div class="lista">'+(L.length?L.map(o=>'<div class="item '+(o.estado==='enviado'?'warn':o.estado==='respondido'?'ok':'')+'"><div class="cuerpo"><button class="tit" data-a="abrir-oficio" data-id="'+o.id+'">N°'+esc(o.numero)+' · '+esc(o.mat||'Sin materia')+'</button><div class="small muted">A: '+esc(o.aNombre||'sin destinatario')+' · '+fechaCorta(o.fecha)+(o.tipo==='amp'?' · Medida de protección':'')+'</div><div>'+pillE(o.estado)+(o.ejemplo?' <span class="pill ej">Ejemplo</span>':'')+'</div></div><div class="acc">'+(o.estado==='enviado'?'<button class="btn sm" data-a="reiterar" data-id="'+o.id+'">Reiterar</button>':'')+'</div></div>').join(''):'<p class="muted">Aún no hay oficios.</p>')+'</div>';
+    '<div class="lista">'+(L.length?L.map(o=>'<div class="item '+(o.estado==='enviado'?'warn':o.estado==='respondido'?'ok':'')+'"><div class="cuerpo"><button class="tit" data-a="abrir-oficio" data-id="'+o.id+'">N°'+esc(o.numero)+' · '+esc(o.mat||'Sin materia')+'</button><div class="small muted">A: '+esc(o.aNombre||'sin destinatario')+' · '+fechaCorta(o.fecha)+(o.tipo==='amp'?' · Medida de protección':'')+'</div><div>'+pillE(o.estado)+(o.ejemplo?' <span class="pill ej">Ejemplo</span>':'')+'</div></div><div class="acc">'+(o.estado==='enviado'?'<button class="btn sm" data-a="reiterar" data-id="'+o.id+'">Reiterar</button>':'')+'</div></div>').join(''):'<p class="muted">Aún no hay oficios.</p>')+'</div>'+htmlPlantillas();
 }
 function selDest(o){return '<select id="sel-dest" data-a-change="dest"><option value="">Elegir destinatario frecuente…</option>'+(S.perfil.destinatarios||[]).map((d,i)=>'<option value="'+i+'"'+(d.nombre===o.aNombre?' selected':'')+'>'+esc(d.nombre)+' — '+esc(d.cargo)+'</option>').join('')+'</select>'}
 function inp(ctx,path,val,extra){return '<input data-ctx="'+ctx+'" data-bind="'+path+'" value="'+esc(val)+'" '+(extra||'')+'>'}
@@ -993,7 +996,7 @@ function vOficioEd(){
     '<div class="card"><div class="row"><button class="btn pri needs-dl" data-a="word-oficio">'+ic('down')+'Descargar Word</button><button class="btn" data-a="copiar-oficio">'+ic('copy')+'Copiar texto</button><button class="btn" data-a="wa-doc">'+ic('send')+'WhatsApp</button><button class="btn solo-and" data-a="compartir-word-oficio">'+ic('send')+'Compartir Word</button><button class="btn solo-and" data-a="compartir-texto">'+ic('send')+'Compartir texto</button>'+
       (o.estado==='borrador'?'<button class="btn" data-a="enviar-oficio" id="btn-enviar">'+ic('send')+'Marcar como enviado</button>':'')+
       (o.estado==='enviado'?'<button class="btn" data-a="cumplir" data-k="oficio" data-id="'+o.id+'">'+ic('check')+'Marcar respondido</button><button class="btn" data-a="reiterar" data-id="'+o.id+'">Reiterar</button>':'')+
-      '<button class="btn" data-a="borrar-oficio" data-id="'+o.id+'">'+ic('trash')+'Eliminar</button></div></div>'+
+      '<button class="btn" data-a="pl-desde-oficio">Guardar como plantilla</button><button class="btn" data-a="borrar-oficio" data-id="'+o.id+'">'+ic('trash')+'Eliminar</button></div></div>'+
   '</div><div class="prev" id="prev"></div></div>';
 }
 
@@ -1030,14 +1033,15 @@ function vPerfil(){
   return '<h1>Perfil institucional</h1><p class="muted small">Lo que configures aquí define el membrete, los colores y los datos de todos los documentos.</p>'+
   '<div class="card"><h2>Identidad</h2><div class="grid2"><label class="f"><span>Nombre del establecimiento</span>'+inp('perfil','nombre',P.nombre,'data-tema="1"')+'</label><label class="f"><span>Segunda línea del membrete</span>'+inp('perfil','linea2',P.linea2)+'</label></div>'+
     '<div class="grid3"><label class="f"><span>Teléfono</span>'+inp('perfil','telefono',P.telefono)+'</label><label class="f"><span>Correo</span>'+inp('perfil','correo',P.correo)+'</label><label class="f"><span>Localidad (para la fecha)</span>'+inp('perfil','localidad',P.localidad)+'</label></div>'+
-    '<div class="grid3"><label class="f"><span>Director(a), como firma</span>'+inp('perfil','director',P.director)+'</label><label class="f"><span>Cargo</span>'+inp('perfil','cargo',P.cargo)+'</label><label class="f"><span>Iniciales de responsabilidad</span>'+inp('perfil','iniciales',P.iniciales)+'</label></div></div>'+
+    '<div class="grid3"><label class="f"><span>Director(a), como firma</span>'+inp('perfil','director',P.director)+'</label><label class="f"><span>Cargo</span>'+inp('perfil','cargo',P.cargo)+'</label><label class="f"><span>Iniciales de responsabilidad</span>'+inp('perfil','iniciales',P.iniciales)+'</label></div>'+
+    '<div class="grid3"><label class="f"><span>RBD (para el reporte semanal)</span>'+inp('perfil','rbd',P.rbd||'','placeholder="Ej.: 1234-5"')+'</label></div></div>'+
   '<div class="card"><h2>Colores e imágenes</h2><div class="grid3"><label class="f"><span>Color principal</span>'+inp('perfil','colores.primario',c.primario,'type="color" data-tema="1"')+'</label><label class="f"><span>Color oscuro</span>'+inp('perfil','colores.oscuro',c.oscuro,'type="color" data-tema="1"')+'</label><label class="f"><span>Color de acento</span>'+inp('perfil','colores.acento',c.acento,'type="color" data-tema="1"')+'</label></div><p class="small muted" id="contraste">'+contrasteTxt()+'</p>'+
     '<div class="grid2"><label class="f"><span>Insignia o logo</span><input type="file" accept="image/*" data-img="logo"></label><label class="f"><span>Firma y timbre (imagen)</span><input type="file" accept="image/*" data-img="firma"></label></div>'+
     '<div class="row">'+(S.logo?'<img src="'+esc(S.logo.src)+'" alt="Insignia cargada" style="height:64px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px"><button class="btn sm" data-a="quitar-img" data-k="logo">Quitar insignia</button>':'<span class="small muted">Sin insignia cargada.</span>')+(S.firma?'<img src="'+esc(S.firma.src)+'" alt="Firma cargada" style="height:64px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px"><button class="btn sm" data-a="quitar-img" data-k="firma">Quitar firma</button>':'<span class="small muted">Sin firma cargada: los documentos salen con línea para firmar a mano.</span>')+'</div></div>'+
   htmlCals()+'<div class="card"><h2>Oficios</h2><div class="grid2"><label class="f"><span>Próximo N° de oficio de este año</span>'+inp('perfil','siguienteOficio',P.siguienteOficio,'type="number" min="1" data-num="1"')+'</label></div><label class="f"><span>Destinatarios frecuentes (uno por línea: NOMBRE | CARGO)</span><textarea data-ctx="perfil" data-bind="destinatarios" data-parse="dest">'+esc((P.destinatarios||[]).map(d=>d.nombre+' | '+d.cargo).join('\n'))+'</textarea></label></div>'+
   '<div class="card"><h2>Actas</h2><label class="f"><span>Tipos de reunión (separados por coma)</span><input data-ctx="perfil" data-bind="tiposActa" data-parse="comas" value="'+esc((P.tiposActa||[]).join(', '))+'"></label><label class="f"><span>Áreas de los temas a abordar (separadas por coma)</span><input data-ctx="perfil" data-bind="areas" data-parse="comas" value="'+esc((P.areas||[]).join(', '))+'"></label><label class="f"><span>Nómina de participantes (uno por línea)</span><textarea data-ctx="perfil" data-bind="nomina" data-parse="lineas" style="min-height:180px">'+esc((P.nomina||[]).join('\n'))+'</textarea></label></div>'+
   '<div class="card"><h2>Contactos de WhatsApp</h2><label class="f"><span>Uno por línea: Nombre | número con código de país</span><textarea data-ctx="perfil" data-bind="contactos" data-parse="contactos" style="min-height:90px" placeholder="María Pérez | +56 9 1234 5678">'+esc((P.contactos||[]).map(c=>c.nombre+' | '+c.telefono).join('\n'))+'</textarea></label></div>'+
-  htmlSync()+htmlPuente()+'<div class="card"><h2>Respaldo</h2><p class="small muted">'+(Store.modo==='cuenta'?'Tus datos se guardan en tu cuenta y solo tú puedes verlos.':Store.modo==='local'?(AND?'Tus datos se guardan solo en este teléfono. Exporta un respaldo con frecuencia; queda en la carpeta Descargas.':'Tus datos se guardan solo en este navegador. Exporta un respaldo con frecuencia.'):'En esta vista no hay guardado: exporta un respaldo antes de cerrar.')+'</p><div class="row"><button class="btn" data-a="exportar">'+ic('down')+'Exportar respaldo</button><label class="btn">Importar respaldo<input type="file" accept=".json,application/json" data-import="1" hidden></label>'+(hayEjemplos()?'<button class="btn" data-a="borrar-ejemplos">Borrar ejemplos</button>':'')+'</div></div>';
+  htmlSync()+htmlPuente()+htmlLibros()+'<div class="card"><h2>Respaldo</h2><p class="small muted">'+(Store.modo==='cuenta'?'Tus datos se guardan en tu cuenta y solo tú puedes verlos.':Store.modo==='local'?(AND?'Tus datos se guardan solo en este teléfono. Exporta un respaldo con frecuencia; queda en la carpeta Descargas.':'Tus datos se guardan solo en este navegador. Exporta un respaldo con frecuencia.'):'En esta vista no hay guardado: exporta un respaldo antes de cerrar.')+'</p><div class="row"><button class="btn" data-a="exportar">'+ic('down')+'Exportar respaldo</button><label class="btn">Importar respaldo<input type="file" accept=".json,application/json" data-import="1" hidden></label>'+(hayEjemplos()?'<button class="btn" data-a="borrar-ejemplos">Borrar ejemplos</button>':'')+'</div></div>';
 }
 
 /* ============ texto con formato simple ============ */
@@ -1532,7 +1536,7 @@ const Sync={
       this.meta[k]=x.m||0;lsS('meta',this.meta);this.sombra[k]=estable(S[k]==null?null:S[k]);
     }
     lsS(k,S[k]==null?null:S[k]);this.refrescar();
-    if(k==='puente')Puente.preparar();if(k==='correos')Puente.publicar();
+    if(k==='puente'){cacheP=cacheR=null;Puente.preparar();Puente.publicar()}if(k==='correos'||k==='registros'){cacheP=null;Puente.publicar()}
   },
   refrescar(){
     aplicarTema();const a=document.activeElement;
@@ -1673,17 +1677,22 @@ const Puente={
   verIdx(idx){
     if(!this.sec||!idx)return;
     /* cada cuenta de correo conectada escribe sus propios canales: entrada_<cuenta> y estado_<cuenta> */
-    Object.keys(idx).forEach(k=>{if(/^(entrada|estado)(_[0-9a-f]+)?$/.test(k)&&idx[k]&&idx[k]!==this.revs[k])this.bajar(k,idx[k])});
+    Object.keys(idx).forEach(k=>{if(!idx[k])return;
+      if(/^(entrada|estado)(_[0-9a-f]+)?$/.test(k)){if(idx[k]!==this.revs[k])this.bajar(k,idx[k])}
+      else if(/^libro_(personal|reporte)$/.test(k)){if(idx[k]!==this.revs[k]||!S.libros[k.slice(6)])this.bajar(k,idx[k])}});
   },
   async bajar(q,rev){
     if(this['b_'+q])return;this['b_'+q]=true;
     try{
       const j=await Sync.pedir(this.url(q));
-      if(j&&j.c){const d=descifrarCon(this.llave,j.c);if(q.indexOf('entrada')===0)this.recibir(d);else this.acusar(d)}
+      if(j&&j.c){const d=descifrarCon(this.llave,j.c);if(q.indexOf('entrada')===0)this.recibir(d);else if(q.indexOf('libro_')===0)this.libro(q.slice(6),d);else this.acusar(d)}
       this.revs[q]=rev;lsS('prevs',this.revs);
     }catch(e){}
     this['b_'+q]=false;
   },
+  /* planilla de Drive leída por el programa de Google */
+  libro(rol,d){if(!d||!Array.isArray(d.hojas))return;S.libros[rol]=d;lsS('libro_'+rol,d);cacheP=cacheR=null;Sync.refrescar()},
+  disp(){let d=lsG('disp');if(!d){d=hexDe(nacl.randomBytes(5));lsS('disp',d)}return d},
   /* correos etiquetados que informa el programa de Gmail de una cuenta */
   recibir(d){
     const porId={},tomb=(Sync.tomb&&Sync.tomb.correos)||{},cuenta=String((d&&d.cuenta)||''),pre=d&&d.cid?'m-'+d.cid+'-':'m-';let n=0,cambio=false;
@@ -1706,18 +1715,32 @@ const Puente={
     if(n||e){Store.guardar('correos');Sync.refrescar();this.publicar()}
     if(n)toast(n===1?'El borrador de respuesta ya está en Gmail.':'Los borradores de respuesta ya están en Gmail.');
     else if(e)toast('No se pudo crear el borrador: la conversación ya no está en Gmail.');
+    if(d&&d.cuenta){const av=lsG('pavisos')||{};av[String(d.cuenta)]=d.libros||null;lsS('pavisos',av)}
+    let an=0,bo=0,fa=0;
+    S.registros.forEach(r=>{if(r.estado!=='pendiente')return;const k=r.id+'|'+r.creado;if(hechas[k]){if(r.clase==='correo'){r.estado='borrador';bo++}else{r.estado='anotado';an++}}else if(err[k]){r.estado='error';fa++}});
+    if(an||bo||fa){cacheP=null;Store.guardar('registros');Sync.refrescar();this.publicar()}
+    if(an)toast(an===1?'El registro ya quedó anotado en la planilla.':'Los registros ya quedaron anotados en la planilla.');
+    else if(bo)toast('El borrador con el reporte ya está en Gmail.');
+    else if(fa)toast('El programa de Google no pudo completar un registro. Revisa la sección correspondiente.');
   },
   marcar(cuenta,t){const u=lsG('pult')||{},c=(u&&u.cuentas)||{};c[cuenta||'cuenta sin nombre']=t;lsS('pult',{cuentas:c})},
   cuentas(){const u=lsG('pult')||{},c=u.cuentas||(u.t?{[u.cuenta||'cuenta sin nombre']:u.t}:{});return Object.keys(c).sort().map(k=>({cuenta:k,t:c[k]}))},
   /* respuestas pendientes que el programa debe convertir en borradores */
   async publicar(){
     if(!this.sec)return;
-    const r=S.correos.filter(c=>c.respuesta&&c.respuesta.estado==='pendiente').map(c=>({id:c.id,hilo:c.hilo,cuenta:c.cuenta||'',texto:c.respuesta.texto,creado:c.respuesta.creado})).sort((a,b)=>a.id<b.id?-1:1);
-    const j=JSON.stringify(r);if(j===this.revs.salida||(!r.length&&this.revs.salida===undefined))return;
+    const porId=(a,b)=>a.id<b.id?-1:1,pend=S.registros.filter(x=>x.estado==='pendiente'),L=(S.puente&&S.puente.libros)||{};
+    const o={respuestas:S.correos.filter(c=>c.respuesta&&c.respuesta.estado==='pendiente').map(c=>({id:c.id,hilo:c.hilo,cuenta:c.cuenta||'',texto:c.respuesta.texto,creado:c.respuesta.creado})).sort(porId)};
+    const reg=pend.filter(x=>x.clase==='fila').map(x=>({id:x.id,creado:x.creado,cuenta:x.cuenta||'',libro:x.libro,archivo:x.archivo,hoja:x.hoja,valores:x.valores})).sort(porId);
+    const env=pend.filter(x=>x.clase==='correo').map(x=>({id:x.id,creado:x.creado,cuenta:x.cuenta||'',para:x.para,asunto:x.asunto,cuerpo:x.cuerpo,adjunto:x.adjunto||''})).sort(porId);
+    if(reg.length)o.registros=reg;if(env.length)o.envios=env;
+    if(L.personal||L.reporte||L.m)o.libros={personal:L.personal||'',reporte:L.reporte||'',m:L.m||0};
+    const j=JSON.stringify(o),vacio=!o.respuestas.length&&!reg.length&&!env.length&&!o.libros;
+    if(j===this.revs.salida||(vacio&&this.revs.salida===undefined))return;
     try{
-      const rev=Date.now().toString(36);
-      await Sync.pedir(this.url('salida'),'PUT',{c:cifrarCon(this.llave,{respuestas:r}),r:rev});
-      await Sync.pedir(this.url('idx'),'PATCH',{salida:rev});
+      /* cada dispositivo escribe su propio canal: así ninguno pisa lo que otro dejó pendiente */
+      const rev=Date.now().toString(36),canal='salida_'+this.disp();
+      await Sync.pedir(this.url(canal),'PUT',{c:cifrarCon(this.llave,o),r:rev});
+      await Sync.pedir(this.url('idx'),'PATCH',{[canal]:rev});
       this.revs.salida=j;lsS('prevs',this.revs);
     }catch(e){clearTimeout(this.tp);this.tp=setTimeout(()=>this.publicar(),20000)}
   }
@@ -1750,6 +1773,256 @@ function htmlPuente(){
     '<label class="f"><span>Código del puente</span><input id="pu-cod" readonly value="'+esc(Puente.codigo())+'" style="font-family:ui-monospace,Consolas,monospace;font-size:.85rem"></label>'+
     '<p class="small muted">El código da acceso solo a los correos del puente, no al resto de tus datos. No lo compartas.</p>'+
     '<div class="row"><button class="btn pri" data-a="puente-copiar">'+ic('copy')+'Copiar código</button><button class="btn" data-a="puente-desactivar">Desactivar</button></div></div>';
+}
+/* ============ planillas de Drive: permisos y licencias, reporte semanal ============ */
+function nrm(t){return String(t==null?'':t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim()}
+function idDrive(t){const s=String(t||'').trim(),m=/\/d\/([A-Za-z0-9_-]{20,})/.exec(s)||/[?&]id=([A-Za-z0-9_-]{20,})/.exec(s)||/^([A-Za-z0-9_-]{20,})$/.exec(s);return m?m[1]:''}
+function fechaDe(v){
+  if(typeof v==='number')return v>30000&&v<80000?new Date(Math.round((v-25569)*864e5)).toISOString().slice(0,10):'';
+  const s=String(v==null?'':v).trim();let m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s);if(m)return m[1]+'-'+m[2]+'-'+m[3];
+  m=/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/.exec(s);if(m)return (m[3].length===2?'20'+m[3]:m[3])+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  return '';
+}
+function numDe(v){const n=typeof v==='number'?v:parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(n)?n:0}
+function nDe(v){return String(Math.round(numDe(v)*100)/100).replace('.',',')}
+function diaCorto(f){if(!f)return '';const d=new Date(f+'T12:00:00');return DIAS[d.getDay()].slice(0,3)+' '+d.getDate()}
+function rango(a,b){return a?(b&&b!==a?fechaCorta(a)+' al '+fechaCorta(b):fechaCorta(a)):'sin fecha'}
+function libroDe(rol){const L=S.libros[rol],id=((S.puente||{}).libros||{})[rol];return L&&id&&L.archivo===id?L:null}
+function tablaLibro(L,pref){
+  const h=((L&&L.hojas)||[]).find(x=>nrm(x.nombre).indexOf(pref)===0);if(!h)return null;
+  const F=h.filas||[];let fe=-1;for(let i=0;i<F.length&&i<15&&fe<0;i++)if(nrm((F[i]||[])[0]).indexOf('funcionario')===0&&F[i].filter(c=>String(c==null?'':c).trim()!=='').length>=3)fe=i;
+  if(fe<0)return null;
+  const enc=F[fe].map(x=>String(x==null?'':x)),ne=enc.map(nrm);
+  const col=p=>{let i=ne.indexOf(p);if(i<0)i=ne.findIndex(x=>x.indexOf(p)===0);return i};
+  return {hoja:h.nombre,enc:enc,col:col,listas:h.listas||{},filas:F.slice(fe+1).filter(f=>f&&String(f[0]==null?'':f[0]).trim()),v:(f,p)=>{const i=col(p);return i<0||f[i]==null?'':f[i]}};
+}
+let cacheP=null,cacheR=null;
+function personal(){
+  const L=libroDe('personal');if(!L)return null;if(cacheP&&cacheP.L===L)return cacheP;
+  const tF=tablaLibro(L,'funcionarios'),tP=tablaLibro(L,'permisos'),tL=tablaLibro(L,'licencias'),tH=tablaLibro(L,'horas'),t=x=>String(x==null?'':x).trim();
+  const o={L:L,tF:tF,tP:tP,tL:tL,tH:tH,func:[],perm:[],lic:[],horas:[]};
+  if(tF)o.func=tF.filas.map(f=>({nombre:t(tF.v(f,'funcionario')),estado:t(tF.v(f,'estado')),estamento:t(tF.v(f,'estamento')),paAnual:tF.v(f,'dias pa anuales'),paUsados:tF.v(f,'pa usados'),saldoPa:tF.v(f,'saldo pa'),nLic:tF.v(f,'n licencias'),diasLic:tF.v(f,'dias de licencia'),hSaldo:tF.v(f,'saldo horas'),cargo:t(tF.v(f,'cargo')),contrato:t(tF.v(f,'tipo de contrato')),horasC:tF.v(f,'horas contrato'),obs:t(tF.v(f,'observaciones'))}));
+  if(tP)o.perm=tP.filas.map(f=>{const ini=fechaDe(tP.v(f,'fecha inicio'));return {nombre:t(tP.v(f,'funcionario')),tipo:t(tP.v(f,'tipo de permiso')),ini:ini,fin:fechaDe(tP.v(f,'fecha termino'))||ini,jornada:t(tP.v(f,'jornada')),dias:tP.v(f,'dias'),imput:t(tP.v(f,'imputacion')),estado:t(tP.v(f,'estado')),autoriza:t(tP.v(f,'autorizado por')),obs:t(tP.v(f,'observaciones'))}});
+  if(tL)o.lic=tL.filas.map(f=>{const ini=fechaDe(tL.v(f,'fecha inicio')),n=numDe(tL.v(f,'n dias'));return {nombre:t(tL.v(f,'funcionario')),tipo:t(tL.v(f,'tipo de licencia')),ini:ini,dias:n,fin:fechaDe(tL.v(f,'fecha termino'))||(ini?masDias(ini,Math.max(1,n)-1):''),estado:t(tL.v(f,'estado')),folio:t(tL.v(f,'n folio')),reemplazo:t(tL.v(f,'reemplazo')),obs:t(tL.v(f,'observaciones'))}});
+  if(tH)o.horas=tH.filas.map(f=>({nombre:t(tH.v(f,'funcionario')),fecha:fechaDe(tH.v(f,'fecha')),mov:t(tH.v(f,'movimiento')),horas:tH.v(f,'horas'),motivo:t(tH.v(f,'motivo')),autoriza:t(tH.v(f,'autorizado por')),obs:t(tH.v(f,'observaciones'))}));
+  /* lo registrado en la aplicación que el programa de Google aún no anota en la planilla */
+  S.registros.forEach(r=>{if(r.clase!=='fila'||r.estado==='anotado'||!r.fila)return;const x=Object.assign({pend:r.estado,rid:r.id},r.fila);(r.tipo==='permiso'?o.perm:r.tipo==='licencia'?o.lic:o.horas).push(x)});
+  cacheP=o;return o;
+}
+function ausentes(f){
+  const P=personal(),o=[];if(!P)return o;
+  P.lic.forEach(l=>{if(l.ini&&l.ini<=f&&f<=l.fin)o.push({k:'lic',nombre:l.nombre,que:'Licencia médica',ini:l.ini,fin:l.fin,det:l.reemplazo?'Reemplazo: '+l.reemplazo:'',pend:l.pend})});
+  P.perm.forEach(p=>{if(p.ini&&p.ini<=f&&f<=p.fin&&!/rechaz/.test(nrm(p.estado)))o.push({k:'perm',nombre:p.nombre,que:p.tipo||'Permiso',ini:p.ini,fin:p.fin,det:[/completo/.test(nrm(p.jornada))?'':p.jornada,/solicit/.test(nrm(p.estado))?'por autorizar':''].filter(Boolean).join(' · '),pend:p.pend})});
+  return o.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+}
+function pillPend(x){return x.pend==='pendiente'?' <span class="pill n">Por anotar en la planilla</span>':x.pend==='error'?' <span class="pill crit">No se pudo anotar</span>':''}
+function filaAus(x){return '<div class="item '+(x.k==='lic'?'warn':'ev')+'"><div class="cuerpo"><span class="tit">'+esc(x.nombre)+'</span><div class="small muted">'+esc(x.que)+' · '+rango(x.ini,x.fin)+(x.det?' · '+esc(x.det):'')+pillPend(x)+'</div></div></div>'}
+function problemaLibro(rol){
+  const av=lsG('pavisos')||{},c=Object.keys(av);if(!Puente.cuentas().length)return 'Aún no hay ninguna cuenta de Google con el programa instalado.';
+  if(!c.some(k=>av[k]))return 'Si ya pasaron más de 5 minutos, revisa que el programa instalado en Google sea el de esta versión (PuenteCorreo) y que su cuenta tenga acceso al archivo.';
+  if(c.some(k=>av[k]&&av[k][rol]==='ok'))return '';
+  const m=c.filter(k=>av[k]&&av[k][rol]).map(k=>k+': '+av[k][rol]);
+  return m.length?'El programa no pudo leer el archivo ('+m.join('; ')+'). Comprueba que esa cuenta de Google tenga acceso a la planilla.':'';
+}
+function avisoLibro(rol){
+  if(!Sync.disponible())return '<div class="aviso info">Esta sección funciona en la aplicación instalada en el teléfono o en el PC: ahí se conecta con tu planilla de Drive por medio del mismo programa de Google que trae los correos.</div>';
+  if(!Puente.activo())return '<div class="aviso">Para ver aquí tu planilla de Drive, activa primero el puente en <a href="#perfil">Perfil → Correo</a> e instala el programa en la cuenta de Google donde está el archivo.</div>';
+  if(!((S.puente||{}).libros||{})[rol])return '<div class="aviso">Falta indicar cuál es la planilla: pega su enlace de Drive en <a href="#perfil">Perfil → Planillas de Drive</a>.</div>';
+  const pr=problemaLibro(rol);
+  return '<div class="aviso info">Esperando la primera lectura de la planilla. El programa de Google revisa cada 5 minutos.'+(pr?'<br>'+esc(pr):'')+'</div>';
+}
+function pieLibro(rol){const L=libroDe(rol);if(!L)return '';return '<p class="small muted">Planilla: '+esc(L.nombre||'')+' · leída el '+fechaHoraCorta(new Date(L.rev||Date.now()).toISOString())+(L.cuenta?' por '+esc(L.cuenta):'')+' · <a href="https://drive.google.com/open?id='+esc(L.archivo)+'" target="_blank" rel="noopener">Abrir en Drive</a></p>'}
+function pillEstado(e){const n=nrm(e);if(!n)return '';return '<span class="pill '+(/rechaz/.test(n)?'crit':/solicit|tramite|apelac|reducid/.test(n)?'warn':/autoriz|aprob/.test(n)?'ok':'n')+'">'+esc(e)+'</span>'}
+function filaPerm(p,sinNombre){return '<div class="item"><div class="cuerpo">'+(sinNombre?'':'<span class="tit">'+esc(p.nombre)+'</span>')+'<div class="small">'+esc(p.tipo||'Permiso')+' · <b>'+rango(p.ini,p.fin)+'</b>'+(p.jornada?' · '+esc(p.jornada):'')+(p.dias!==''&&p.dias!=null?' · '+nDe(p.dias)+' día(s)':'')+(p.imput?' · '+esc(p.imput):'')+'</div>'+(p.obs?'<div class="small muted">'+esc(p.obs)+'</div>':'')+'<div>'+pillEstado(p.estado)+pillPend(p)+'</div></div></div>'}
+function filaLic(l,sinNombre){return '<div class="item warn"><div class="cuerpo">'+(sinNombre?'':'<span class="tit">'+esc(l.nombre)+'</span>')+'<div class="small">'+esc(l.tipo||'Licencia médica')+' · <b>'+rango(l.ini,l.fin)+'</b>'+(l.dias?' · '+nDe(l.dias)+' día(s)':'')+(l.folio?' · folio '+esc(l.folio):'')+'</div>'+(l.reemplazo||l.obs?'<div class="small muted">'+[l.reemplazo?'Reemplazo: '+l.reemplazo:'',l.obs].filter(Boolean).map(esc).join(' · ')+'</div>':'')+'<div>'+pillEstado(l.estado)+pillPend(l)+'</div></div></div>'}
+function filaHora(h,sinNombre){const ut=/utiliz/.test(nrm(h.mov));return '<div class="item '+(ut?'':'ok')+'"><div class="cuerpo">'+(sinNombre?'':'<span class="tit">'+esc(h.nombre)+'</span>')+'<div class="small">'+esc(h.mov||'Movimiento')+' <b>'+nDe(h.horas)+' h</b> · '+(h.fecha?fechaCorta(h.fecha):'sin fecha')+(h.motivo?' · '+esc(h.motivo):'')+'</div>'+(h.obs?'<div class="small muted">'+esc(h.obs)+'</div>':'')+(h.pend?'<div>'+pillPend(h)+'</div>':'')+'</div></div>'}
+function filaFunc(f){const e=nrm(f.estado),aus=/licencia|permiso|ausente/.test(e);
+  return '<div class="item '+(aus?'warn':'')+'"><div class="cuerpo"><button class="tit" data-a="func-ver" data-n="'+esc(f.nombre)+'">'+esc(f.nombre)+'</button><div class="small muted">'+[f.cargo,f.estamento,f.contrato].filter(Boolean).map(esc).join(' · ')+'</div>'+
+    '<div class="small">Permisos adm.: <b>'+nDe(f.paUsados)+'</b> usados, saldo <b>'+nDe(f.saldoPa)+'</b> · Licencias: <b>'+nDe(f.nLic)+'</b> ('+nDe(f.diasLic)+' días) · Horas comp.: saldo <b>'+nDe(f.hSaldo)+'</b></div></div>'+(f.estado?'<div class="acc"><span class="pill '+(aus?'warn':'n')+'">'+esc(f.estado)+'</span></div>':'')+'</div>';
+}
+function listaP(){
+  const P=personal();if(!P)return '';const q=nrm(S.busP),ok=x=>!q||nrm(x).indexOf(q)>=0,vac='<p class="muted">Sin resultados.</p>',mas=(L,n)=>L.length>n?'<p class="small muted">Se muestran los '+n+' más recientes de '+L.length+'. Usa el buscador para encontrar otros.</p>':'';
+  if(S.tabP==='funcionarios'){const L=P.func.filter(f=>ok(f.nombre+' '+f.cargo+' '+f.estamento+' '+f.estado));return L.length?L.map(filaFunc).join(''):vac}
+  if(S.tabP==='permisos'){const L=P.perm.filter(p=>ok(p.nombre+' '+p.tipo+' '+p.estado)).sort((a,b)=>String(b.ini).localeCompare(String(a.ini)));return L.length?L.slice(0,80).map(p=>filaPerm(p)).join('')+mas(L,80):vac}
+  if(S.tabP==='licencias'){const L=P.lic.filter(l=>ok(l.nombre+' '+l.tipo+' '+l.estado)).sort((a,b)=>String(b.ini).localeCompare(String(a.ini)));return L.length?L.slice(0,80).map(l=>filaLic(l)).join('')+mas(L,80):vac}
+  const L=P.horas.filter(h=>ok(h.nombre+' '+h.mov+' '+h.motivo)).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));return L.length?L.slice(0,80).map(h=>filaHora(h)).join('')+mas(L,80):vac;
+}
+function regsPend(clase){return S.registros.filter(r=>r.clase===clase&&(r.estado==='pendiente'||r.estado==='error'))}
+function htmlRegsPend(clase){
+  const L=regsPend(clase);if(!L.length)return '';
+  return '<div class="card"><h2>En camino desde la aplicación</h2><div class="lista">'+L.map(r=>'<div class="item '+(r.estado==='error'?'crit':'')+'"><div class="cuerpo"><span class="tit">'+esc(r.resumen||'Registro')+'</span><div class="small muted">'+(r.estado==='error'?(r.clase==='correo'?'No se pudo crear el borrador en Gmail. Revisa que la cuenta del programa tenga acceso al archivo.':'No se pudo anotar. Revisa que la planilla sea una Hoja de cálculo de Google y que la cuenta del programa pueda editarla.'):(r.clase==='correo'?'El borrador aparecerá en Gmail en unos minutos.':'Se anotará en la planilla en unos minutos.'))+'</div></div><div class="acc">'+(r.estado==='error'?'<button class="btn sm" data-a="reg-reintentar" data-id="'+r.id+'">Reintentar</button>':'')+'<button class="btn sm ico" data-a="reg-borrar" data-id="'+r.id+'" title="Quitar" aria-label="Quitar">'+ic('trash')+'</button></div></div>').join('')+'</div></div>';
+}
+function pResumen(P){
+  const h=hoyISO(),A=ausentes(h),tope=masDias(h,14),prox=[];
+  P.lic.forEach(l=>{if(l.ini>h&&l.ini<=tope)prox.push({k:'lic',nombre:l.nombre,que:'Licencia médica',ini:l.ini,fin:l.fin,det:'',pend:l.pend})});
+  P.perm.forEach(p=>{if(p.ini>h&&p.ini<=tope&&!/rechaz/.test(nrm(p.estado)))prox.push({k:'perm',nombre:p.nombre,que:p.tipo||'Permiso',ini:p.ini,fin:p.fin,det:/solicit/.test(nrm(p.estado))?'por autorizar':'',pend:p.pend})});
+  prox.sort((a,b)=>a.ini.localeCompare(b.ini));
+  const sol=P.perm.filter(p=>/solicit/.test(nrm(p.estado))),tram=P.lic.filter(l=>/tramite|apelac/.test(nrm(l.estado)));
+  return '<div class="tiles"><div class="tile '+(A.filter(x=>x.k==='lic').length?'warn':'ok')+'"><b>'+A.filter(x=>x.k==='lic').length+'</b><span>Con licencia hoy</span></div><div class="tile '+(A.filter(x=>x.k==='perm').length?'warn':'ok')+'"><b>'+A.filter(x=>x.k==='perm').length+'</b><span>Con permiso hoy</span></div><div class="tile '+(sol.length?'warn':'')+'"><b>'+sol.length+'</b><span>Permisos por autorizar</span></div><div class="tile '+(tram.length?'warn':'')+'"><b>'+tram.length+'</b><span>Licencias en trámite</span></div></div>'+
+    htmlRegsPend('fila')+
+    '<div class="card"><h2>Ausentes hoy</h2><div class="lista">'+(A.length?A.map(filaAus).join(''):'<p class="muted">Nadie registra licencia ni permiso para hoy.</p>')+'</div></div>'+
+    '<div class="card"><h2>Próximos 14 días</h2><div class="lista">'+(prox.length?prox.map(filaAus).join(''):'<p class="muted">No hay ausencias registradas para los próximos días.</p>')+'</div></div>'+
+    (sol.length?'<div class="card"><h2>Permisos por autorizar</h2><div class="lista">'+sol.slice(0,20).map(p=>filaPerm(p)).join('')+'</div></div>':'')+
+    (tram.length?'<div class="card"><h2>Licencias en trámite</h2><div class="lista">'+tram.slice(0,20).map(l=>filaLic(l)).join('')+'</div></div>':'');
+}
+function vPersonal(){
+  const P=personal(),cab='<div class="row between"><h1>Permisos y licencias</h1>'+(P?'<button class="btn pri" data-a="reg-nuevo">'+ic('plus')+'Registrar</button>':'')+'</div>';
+  if(!P)return cab+avisoLibro('personal');
+  if(!P.tF&&!P.tP&&!P.tL)return cab+pieLibro('personal')+'<div class="aviso">La planilla llegó, pero no se reconocieron las hojas «Funcionarios», «Permisos» ni «Licencias» (cada una debe tener una fila de títulos que empiece con «Funcionario/a»).</div>';
+  const T=[['resumen','Resumen'],['funcionarios','Funcionarios ('+P.func.length+')'],['permisos','Permisos ('+P.perm.length+')'],['licencias','Licencias ('+P.lic.length+')'],['horas','Horas comp.']];
+  return cab+pieLibro('personal')+'<div class="tabs">'+T.map(t=>'<button class="btn sm'+(S.tabP===t[0]?' pri':'')+'" data-a="tab-p" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'+
+    (S.tabP==='resumen'?pResumen(P):'<label class="f"><span>Buscar</span><input id="bus-p" data-a-input="bus-p" value="'+esc(S.busP)+'" placeholder="Nombre, tipo o estado" autocomplete="off"></label><div class="lista" id="lp">'+listaP()+'</div>');
+}
+function hojaFunc(nombre){
+  const P=personal();if(!P)return;const f=P.func.find(x=>x.nombre===nombre)||{nombre:nombre},de=L=>L.filter(x=>x.nombre===nombre);
+  const pe=de(P.perm).sort((a,b)=>String(b.ini).localeCompare(String(a.ini))),li=de(P.lic).sort((a,b)=>String(b.ini).localeCompare(String(a.ini))),ho=de(P.horas).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
+  hoja('<h2>'+esc(nombre)+'</h2><p class="small muted">'+[f.cargo,f.estamento,f.contrato,f.horasC?nDe(f.horasC)+' h':''].filter(Boolean).map(esc).join(' · ')+'</p>'+
+    '<div class="tiles"><div class="tile br"><b>'+nDe(f.saldoPa)+'</b><span>Saldo permisos adm. ('+nDe(f.paUsados)+' usados)</span></div><div class="tile"><b>'+nDe(f.diasLic)+'</b><span>Días de licencia ('+nDe(f.nLic)+' licencias)</span></div><div class="tile"><b>'+nDe(f.hSaldo)+'</b><span>Saldo horas comp.</span></div></div>'+
+    (f.obs?'<p class="small">'+esc(f.obs)+'</p>':'')+
+    '<div class="row"><button class="btn sm pri" data-a="reg-nuevo" data-tipo="permiso" data-n="'+esc(nombre)+'">'+ic('plus')+'Permiso</button><button class="btn sm" data-a="reg-nuevo" data-tipo="licencia" data-n="'+esc(nombre)+'">'+ic('plus')+'Licencia</button><button class="btn sm" data-a="reg-nuevo" data-tipo="horas" data-n="'+esc(nombre)+'">'+ic('plus')+'Horas comp.</button><button class="btn sm" data-a="cerrar-hoja">Cerrar</button></div>'+
+    '<h2>Permisos ('+pe.length+')</h2><div class="lista">'+(pe.length?pe.slice(0,20).map(p=>filaPerm(p,true)).join(''):'<p class="muted small">Sin permisos registrados.</p>')+'</div>'+
+    '<h2>Licencias ('+li.length+')</h2><div class="lista">'+(li.length?li.slice(0,20).map(l=>filaLic(l,true)).join(''):'<p class="muted small">Sin licencias registradas.</p>')+'</div>'+
+    (ho.length?'<h2>Horas compensatorias</h2><div class="lista">'+ho.slice(0,20).map(h=>filaHora(h,true)).join('')+'</div>':''));
+}
+/* ---- registrar desde la aplicación: el programa de Google lo anota en la planilla ---- */
+const REG={
+  permiso:{tit:'Permiso',tabla:'tP',campos:[['funcionario','Funcionario/a','func'],['tipo de permiso','Tipo de permiso','sel',['Administrativo (con goce)','Sin goce de remuneraciones','Fallecimiento de familiar','Nacimiento de hijo/a','Matrimonio / AUC','Otro permiso legal']],['fecha inicio','Desde','date'],['fecha termino','Hasta','date'],['jornada','Jornada','sel',['Día completo','Medio día (mañana)','Medio día (tarde)']],['imputacion','Imputación','sel',[]],['estado','Estado','sel',['Solicitado','Autorizado','Rechazado']],['fecha solicitud','Fecha de la solicitud','date'],['autorizado por','Autorizado por','text'],['observaciones','Observaciones','text']]},
+  licencia:{tit:'Licencia médica',tabla:'tL',campos:[['funcionario','Funcionario/a','func'],['tipo de licencia','Tipo de licencia','sel',[]],['fecha inicio','Desde','date'],['n dias','N° de días','num'],['estado','Estado','sel',['En trámite','Autorizada','Reducida','Rechazada','En apelación']],['n folio','N° de folio','text'],['fecha entrega','Fecha de entrega','date'],['prevision','Previsión','sel',['FONASA','Isapre','Mutual / ISL']],['reemplazo','Reemplazo','text'],['observaciones','Observaciones','text']]},
+  horas:{tit:'Horas compensatorias',tabla:'tH',campos:[['funcionario','Funcionario/a','func'],['fecha','Fecha','date'],['movimiento','Movimiento','sel',['Acumula','Utiliza']],['horas','Horas','num'],['motivo','Motivo o actividad','text'],['autorizado por','Autorizado por','text'],['observaciones','Observaciones','text']]}
+};
+function opcionesReg(T,c){
+  const i=T.col(c[0]);let L=(i>=0&&T.listas[i])||[];
+  if(!L.length){const vistos={};L=(c[3]||[]).slice();L.forEach(x=>{vistos[nrm(x)]=1});T.filas.forEach(f=>{const v=String(i<0||f[i]==null?'':f[i]).trim();if(v&&!vistos[nrm(v)]){vistos[nrm(v)]=1;L.push(v)}})}
+  return L;
+}
+function modaReg(T,p){const i=T.col(p),n={};let m='',k=0;if(i<0)return '';T.filas.slice(-60).forEach(f=>{const v=String(f[i]==null?'':f[i]).trim();if(!v)return;n[v]=(n[v]||0)+1;if(n[v]>k){k=n[v];m=v}});return m}
+function hojaReg(tipo,nombre){
+  const P=personal();if(!P)return;const L=P.L;
+  if(!L.editable){hoja('<h2>Para registrar desde la aplicación</h2><p>La planilla conectada es un archivo de Excel, y el programa de Google solo puede escribir en Hojas de cálculo de Google. Por ahora la aplicación la muestra, pero no puede anotar en ella.</p><p class="small"><b>Cómo dejarla lista (una sola vez):</b> abre la planilla en Drive, entra a Archivo → «Guardar como Hojas de cálculo de Google», y pega el enlace de la planilla nueva en Perfil → Planillas de Drive. Desde entonces, trabaja siempre en la planilla nueva.</p><div class="row"><a class="btn pri" href="https://drive.google.com/open?id='+esc(L.archivo)+'" target="_blank" rel="noopener">Abrir la planilla en Drive</a><a class="btn" href="#perfil" data-a="cerrar-hoja-ir">Ir a Perfil</a><button class="btn" data-a="cerrar-hoja">Cerrar</button></div>');return}
+  tipo=REG[tipo]?tipo:'permiso';const R=REG[tipo],T=P[R.tabla],h=hoyISO();
+  const cab='<h2>Registrar</h2><div class="tabs">'+Object.keys(REG).map(k=>'<button class="btn sm'+(k===tipo?' pri':'')+'" data-a="reg-nuevo" data-tipo="'+k+'" data-n="'+esc(nombre||'')+'">'+REG[k].tit+'</button>').join('')+'</div>';
+  if(!T){hoja(cab+'<div class="aviso">La planilla no tiene una hoja para esto (se busca una hoja cuyo nombre empiece con «'+(tipo==='horas'?'Horas':tipo==='licencia'?'Licencias':'Permisos')+'» y con una fila de títulos que empiece con «Funcionario/a»).</div><div class="row"><button class="btn" data-a="cerrar-hoja">Cerrar</button></div>');return}
+  S.regEd={tipo:tipo};
+  const campo=(c,i)=>{
+    const id='rg-'+i;if(T.col(c[0])<0&&c[2]!=='func')return '';
+    if(c[2]==='func'){const N=P.func.map(f=>f.nombre);return '<label class="f"><span>'+c[1]+'</span>'+(N.length?'<select id="'+id+'"><option value="">Elegir…</option>'+N.map(n=>'<option'+(n===nombre?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select>':'<input id="'+id+'" value="'+esc(nombre||'')+'" autocomplete="off">')+'</label>'}
+    if(c[2]==='date')return '<label class="f"><span>'+c[1]+'</span><input id="'+id+'" type="date" value="'+(c[0]==='fecha entrega'?'':h)+'"></label>';
+    if(c[2]==='num')return '<label class="f"><span>'+c[1]+'</span><input id="'+id+'" type="number" min="0" step="'+(tipo==='horas'?'0.5':'1')+'" inputmode="decimal" value="'+(tipo==='horas'?'':'1')+'"></label>';
+    if(c[2]==='sel'){const O=opcionesReg(T,c),m=modaReg(T,c[0]),def=c[0]==='estado'||c[0]==='jornada'||c[0]==='movimiento'?O[0]:(O.indexOf(m)>=0?m:'');
+      return O.length?'<label class="f"><span>'+c[1]+'</span><select id="'+id+'"><option value="">'+(def?'(sin indicar)':'Elegir…')+'</option>'+O.map(o=>'<option'+(o===def?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></label>':'<label class="f"><span>'+c[1]+'</span><input id="'+id+'" autocomplete="off"></label>'}
+    return '<label class="f"><span>'+c[1]+'</span><input id="'+id+'" value="'+esc(c[0]==='autorizado por'?modaReg(T,c[0]):'')+'" autocomplete="off"></label>';
+  };
+  hoja(cab+'<div class="grid2">'+R.campos.map(campo).join('')+'</div><p class="small muted">Se anotará en la hoja «'+esc(T.hoja)+'» de la planilla, en la primera fila libre. Puede tardar hasta 5 minutos; mientras tanto se muestra aquí como «Por anotar en la planilla».</p><div class="row"><button class="btn pri" data-a="reg-guardar">Registrar</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>');
+}
+function guardarReg(){
+  const P=personal(),tipo=(S.regEd||{}).tipo,R=REG[tipo];if(!P||!R)return;const T=P[R.tabla],L=P.L,val={},v={};
+  R.campos.forEach((c,i)=>{const el=$('#rg-'+i);if(!el)return;let x=String(el.value||'').trim();v[c[0]]=x;if(x==='')return;const ci=T.col(c[0]);if(ci<0)return;val[T.enc[ci]]=c[2]==='num'?numDe(x):x});
+  if(!v.funcionario){toast('Elige al funcionario o funcionaria.');return}
+  const ini=v['fecha inicio']||v.fecha;if(!ini){toast('Indica la fecha.');return}
+  let fila,resumen;
+  if(tipo==='permiso'){const fin=v['fecha termino']||ini;if(fin<ini){toast('La fecha «hasta» no puede ser anterior a «desde».');return}
+    const ct=T.col('fecha termino');if(ct>=0)val[T.enc[ct]]=fin;
+    fila={nombre:v.funcionario,tipo:v['tipo de permiso']||'',ini:ini,fin:fin,jornada:v.jornada||'',dias:'',imput:v.imputacion||'',estado:v.estado||'',obs:v.observaciones||''};resumen='Permiso · '+v.funcionario+' · '+rango(ini,fin)}
+  else if(tipo==='licencia'){const n=numDe(v['n dias']);if(n<1){toast('Indica el número de días de la licencia.');return}const fin=masDias(ini,n-1),ct=T.col('fecha termino');if(ct>=0)val[T.enc[ct]]=fin;
+    fila={nombre:v.funcionario,tipo:v['tipo de licencia']||'',ini:ini,dias:n,fin:fin,estado:v.estado||'',folio:v['n folio']||'',reemplazo:v.reemplazo||'',obs:v.observaciones||''};resumen='Licencia · '+v.funcionario+' · '+rango(ini,fin)}
+  else{const n=numDe(v.horas);if(n<=0){toast('Indica la cantidad de horas.');return}if(!v.movimiento){toast('Indica si acumula o utiliza horas.');return}
+    fila={nombre:v.funcionario,fecha:ini,mov:v.movimiento,horas:n,motivo:v.motivo||'',obs:v.observaciones||''};resumen='Horas comp. · '+v.funcionario+' · '+v.movimiento.toLowerCase()+' '+nDe(n)+' h'}
+  S.registros.push({id:nid(),clase:'fila',tipo:tipo,libro:'personal',archivo:L.archivo,hoja:T.hoja,valores:val,fila:fila,resumen:resumen,cuenta:L.cuenta||'',creado:Date.now(),estado:'pendiente'});
+  cacheP=null;Store.guardar('registros');cerrarHoja();render();Puente.publicar();toast('Registrado. Se anotará en la planilla en unos minutos.');
+}
+/* ---- reporte semanal ---- */
+function reporte(){
+  const L=libroDe('reporte');if(!L)return null;if(cacheR&&cacheR.L===L)return cacheR;
+  const sem=[],otras=[];
+  (L.hojas||[]).forEach(h=>{
+    const F=h.filas||[];let fe=-1;
+    for(let i=0;i<Math.min(F.length,8)&&fe<0;i++){const n=(F[i]||[]).map(nrm);if(n.some(x=>x.indexOf('fecha')===0)&&n.some(x=>x.indexOf('descripcion')===0||x==='tipo'))fe=i}
+    if(fe<0){otras.push(h);return}
+    const n=F[fe].map(nrm),c=p=>n.findIndex(x=>x.indexOf(p)===0),ci={f:c('fecha'),t:c('tipo'),e:c('estado'),d:c('descripcion'),l:c('lugar'),r:c('responsable'),o:c('observ')};
+    let ult='';const filas=[],fechas=[];
+    F.slice(fe+1).forEach(f=>{if(!f||!f.length)return;const g=i=>i<0||f[i]==null?'':String(f[i]).trim(),fd=fechaDe(ci.f<0?'':f[ci.f]);if(fd){ult=fd;fechas.push(fd)}
+      const d=g(ci.d),t=g(ci.t);if(!d&&!t)return;filas.push({fecha:fd||ult,tipo:t,estado:g(ci.e),desc:d,lugar:g(ci.l),resp:g(ci.r),obs:g(ci.o)})});
+    fechas.sort();sem.push({nombre:h.nombre,filas:filas,ini:fechas[0]||'',fin:fechas[fechas.length-1]||''});
+  });
+  cacheR={L:L,sem:sem,otras:otras};return cacheR;
+}
+function semanaHoy(R){const h=hoyISO();return R.sem.find(s=>s.ini&&s.ini<=h&&h<=masDias(s.fin,2))||null}
+function semanaR(R){return R.sem.find(s=>s.nombre===S.semR)||semanaHoy(R)||R.sem.filter(s=>s.ini&&s.ini<=hoyISO()).pop()||R.sem[0]}
+function enviadoR(s){return ((S.puente||{}).enviados||{})[s.nombre]||0}
+const GRUPOS_R=[['evento','Eventos'],['actividad','Actividades'],['mejora','Mejoras en el establecimiento']];
+function grupoR(t){const n=nrm(t),g=GRUPOS_R.find(x=>n.indexOf(x[0])===0);return g?g[0]:'otro'}
+function tituloSemana(s){if(!s.ini)return s.nombre;const a=s.ini.split('-'),b=s.fin.split('-');return 'Semana del '+Number(a[2])+(a[1]!==b[1]?' de '+MESES[Number(a[1])-1]:'')+' al '+Number(b[2])+' de '+MESES[Number(b[1])-1]+' de '+b[0]}
+function textoReporte(s){
+  const P=S.perfil,o=['*Reporte semanal – '+P.nombre+'*'+(P.rbd?' (RBD '+P.rbd+')':''),tituloSemana(s)];
+  if(!s.filas.length)o.push('','Sin novedades esta semana.');
+  GRUPOS_R.concat([['otro','Otros']]).forEach(g=>{const L=s.filas.filter(f=>grupoR(f.tipo)===g[0]);if(!L.length)return;o.push('','*'+g[1]+'*');
+    L.forEach(f=>{const x=String(f.desc||f.tipo).replace(/\s+$/,'');o.push('• '+(f.fecha?diaCorto(f.fecha)+': ':'')+x+(/[.!?]$/.test(x)?'':'.')+(f.lugar?' '+f.lugar+'.':'')+(f.resp?' Responsable: '+f.resp+'.':'')+(f.estado?' ('+f.estado+')':'')+(f.obs?' '+f.obs:''))})});
+  o.push('',String(P.director||'').replace(/^(SR\(A\)|SRA|SR)\.?\s+/i,''),P.cargo||'');
+  return o.join('\n').trim();
+}
+function tablaCruda(h){const F=(h.filas||[]).slice(0,40);return '<div class="card"><h2>'+esc(h.nombre)+'</h2><div class="tabla"><table>'+F.map(f=>'<tr>'+(f||[]).slice(0,10).map(c=>'<td>'+esc(c==null?'':fechaDe(c)&&typeof c!=='number'?fechaCorta(fechaDe(c)):c)+'</td>').join('')+'</tr>').join('')+'</table></div></div>'}
+function filaRep(f){const g=grupoR(f.tipo),n=nrm(f.estado);return '<div class="item '+(/realizad/.test(n)?'ok':/ejecuc/.test(n)?'warn':'ev')+'"><div class="cuerpo"><span class="tit">'+esc(f.desc||f.tipo)+'</span><div class="small muted">'+[f.fecha?diaCorto(f.fecha):'',f.tipo,f.lugar,f.resp?'Responsable: '+f.resp:''].filter(Boolean).map(esc).join(' · ')+'</div>'+(f.obs?'<div class="small muted">'+esc(f.obs)+'</div>':'')+(f.estado?'<div><span class="pill '+(/realizad/.test(n)?'ok':/ejecuc/.test(n)?'warn':'n')+'">'+esc(f.estado)+'</span></div>':'')+'</div></div>'}
+function vReporte(){
+  const R=reporte(),cab='<div class="row between"><h1>Reporte al DAEM</h1>'+(R&&R.sem.length?'<button class="btn pri" data-a="rep-enviar">'+ic('send')+'Enviar</button>':'')+'</div>';
+  if(!R)return cab+avisoLibro('reporte');
+  if(!R.sem.length)return cab+pieLibro('reporte')+'<div class="aviso">La planilla llegó, pero no se reconoció ninguna hoja semanal (se busca una fila de títulos con «Fecha» y «Descripción»). Se muestra tal como está.</div>'+R.otras.slice(0,3).map(tablaCruda).join('');
+  const s=semanaR(R),env=enviadoR(s),cu=k=>s.filas.filter(f=>grupoR(f.tipo)===k).length,dias={};
+  s.filas.forEach(f=>{(dias[f.fecha||'']=dias[f.fecha||'']||[]).push(f)});
+  return cab+pieLibro('reporte')+
+    '<div class="card"><div class="grid2"><label class="f"><span>Semana</span><select data-a-change="sem-r">'+R.sem.map(x=>'<option value="'+esc(x.nombre)+'"'+(x===s?' selected':'')+'>'+esc(x.nombre)+(enviadoR(x)?' · enviado':'')+'</option>').join('')+'</select></label><div><p class="small muted">'+esc(tituloSemana(s))+'</p>'+(env?'<span class="pill ok">Enviado el '+fechaHoraCorta(new Date(env).toISOString())+'</span> <button class="btn sm" data-a="rep-desmarcar">Desmarcar</button>':'<span class="pill warn">Sin enviar</span>')+'</div></div></div>'+
+    htmlRegsPend('correo')+'<div class="tiles"><div class="tile br"><b>'+cu('evento')+'</b><span>Eventos</span></div><div class="tile br"><b>'+cu('actividad')+'</b><span>Actividades</span></div><div class="tile br"><b>'+cu('mejora')+'</b><span>Mejoras</span></div><div class="tile"><b>'+s.filas.length+'</b><span>Registros de la semana</span></div></div>'+
+    (s.filas.length?Object.keys(dias).sort().map(d=>'<div class="card"><h2>'+(d?DIAS[new Date(d+'T12:00:00').getDay()].replace(/^./,c=>c.toUpperCase())+' '+fechaCorta(d):'Sin fecha')+'</h2><div class="lista">'+dias[d].map(filaRep).join('')+'</div></div>').join(''):'<div class="card"><p class="muted">Esta semana no tiene registros en la planilla. Si la envías así, el reporte dirá «Sin novedades esta semana».</p></div>');
+}
+function hojaReporte(){
+  const R=reporte();if(!R||!R.sem.length)return;const s=semanaR(R);
+  hoja('<h2>Enviar el reporte</h2><p class="small muted">'+esc(tituloSemana(s))+'. Puedes ajustar el texto antes de enviarlo; lo que cambies aquí no modifica la planilla.</p>'+
+    '<label class="f"><span>Texto del reporte</span><textarea id="rp-t" style="min-height:220px">'+esc(textoReporte(s))+'</textarea></label>'+
+    '<div class="row"><button class="btn pri" data-a="rep-wa">'+ic('send')+'WhatsApp</button><button class="btn" data-a="rep-copiar">'+ic('copy')+'Copiar</button><button class="btn solo-and" data-a="rep-compartir">'+ic('send')+'Compartir</button><button class="btn" data-a="rep-correo">Correo con la planilla</button></div>'+
+    '<div class="row"><button class="btn" data-a="rep-marcar">'+ic('check')+'Marcar como enviado</button><button class="btn" data-a="cerrar-hoja">Cerrar</button></div>');
+}
+function hojaCorreoReporte(texto){
+  const R=reporte();if(!R)return;const s=semanaR(R),P=S.perfil,L=R.L;S.repTexto=texto;
+  hoja('<h2>Correo con el reporte</h2><p class="small muted">Queda como borrador en Gmail (en la cuenta '+esc(L.cuenta||'del programa')+'), con la planilla adjunta. Lo revisas y lo envías desde Gmail.</p>'+
+    '<label class="f"><span>Para</span><input id="rc-para" type="email" inputmode="email" autocomplete="off" placeholder="correo@daem.cl" value="'+esc((S.puente||{}).repPara||'')+'"></label>'+
+    '<label class="f"><span>Asunto</span><input id="rc-asunto" value="'+esc('Reporte semanal – '+P.nombre+' – '+tituloSemana(s).replace(/^Semana/,'semana'))+'"></label>'+
+    '<label class="chk"><input type="checkbox" id="rc-adj" checked> <span>Adjuntar la planilla «'+esc(L.nombre||'')+'»</span></label>'+
+    '<div class="row"><button class="btn pri" data-a="rep-correo-si">Guardar como borrador en Gmail</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>');
+}
+function htmlLibrosHoy(){
+  let h='';const P=personal();
+  if(P){const A=ausentes(hoyISO());if(A.length)h+='<div class="card"><div class="row between"><h2>Ausentes hoy ('+A.length+')</h2><a class="btn sm" href="#personal">Ver personal</a></div><div class="lista">'+A.slice(0,5).map(filaAus).join('')+(A.length>5?'<p class="small muted">y '+(A.length-5)+' más.</p>':'')+'</div></div>'}
+  const R=reporte();
+  if(R&&R.sem.length){const s=semanaHoy(R);if(s&&!enviadoR(s))h+='<div class="card"><div class="row between"><h2>Reporte semanal al DAEM</h2><a class="btn sm pri" href="#reporte">Ver y enviar</a></div><p class="small muted">'+esc(tituloSemana(s))+' · '+s.filas.length+(s.filas.length===1?' registro':' registros')+' · aún no lo marcas como enviado.</p></div>'}
+  return h;
+}
+function htmlLibros(){
+  if(!Puente.activo())return '';
+  const L=(S.puente||{}).libros||{},lk=id=>id?'https://drive.google.com/open?id='+id:'',est=rol=>{const b=libroDe(rol);if(!L[rol])return 'Sin conectar.';if(b)return 'Conectada: «'+esc(b.nombre||'')+'», leída el '+fechaHoraCorta(new Date(b.rev||Date.now()).toISOString())+(b.cuenta?' por '+esc(b.cuenta):'')+(rol==='personal'?(b.editable?'. Es una Hoja de cálculo de Google: se puede registrar desde la aplicación.':'. Es un archivo de Excel: se puede ver, pero no registrar desde la aplicación.'):'.');return 'Esperando la primera lectura (hasta 5 minutos). '+esc(problemaLibro(rol))};
+  return '<div class="card"><h2>Planillas de Drive</h2><p class="small muted">Pega el enlace de cada planilla. El mismo programa de Google que trae los correos las lee cada 5 minutos y las muestra, cifradas, en las secciones Personal y Reporte. El programa debe estar instalado en una cuenta de Google que tenga acceso a esos archivos.</p>'+
+    '<label class="f"><span>Permisos y licencias</span><input id="lb-personal" value="'+esc(lk(L.personal))+'" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off"></label><p class="small muted">'+est('personal')+'</p>'+
+    '<label class="f"><span>Reporte semanal al DAEM</span><input id="lb-reporte" value="'+esc(lk(L.reporte))+'" placeholder="https://drive.google.com/file/d/…" autocomplete="off"></label><p class="small muted">'+est('reporte')+'</p>'+
+    '<div class="row"><button class="btn pri" data-a="libros-guardar">Guardar enlaces</button></div></div>';
+}
+/* ============ plantillas de oficios ============ */
+function plantillaVacia(){return {id:nid(),nombre:'',tipo:'ordinario',mat:'',aNombre:'',aCargo:'',cuerpo:'',cierre:'Agradeciendo de antemano su disposición y gestión, se despide atentamente,',distribucion:'Citado\nSostenedor\nArchivo'}}
+function variables(t){const P=S.perfil,h=hoyISO();return String(t||'').replace(/\{fecha\}/gi,fechaLarga(h)).replace(/\{a[nñ]o\}/gi,h.slice(0,4)).replace(/\{escuela\}/gi,P.nombre).replace(/\{director\}/gi,P.director).replace(/\{localidad\}/gi,P.localidad)}
+function oficioDePlantilla(p){const o=nuevoOficioObj(p.tipo==='amp'?'amp':'ordinario');['mat','cuerpo','cierre','distribucion'].forEach(k=>{if(String(p[k]||'').trim())o[k]=variables(p[k])});if(p.aNombre){o.aNombre=p.aNombre;o.aCargo=p.aCargo||''}return o}
+function htmlPlantillas(){
+  const L=S.plantillas.slice().sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre)));
+  return '<div class="card"><div class="row between"><h2>Plantillas de oficios</h2><button class="btn sm" data-a="pl-nueva">'+ic('plus')+'Nueva plantilla</button></div><p class="small muted">Una plantilla guarda la materia, el destinatario, el texto, la despedida y la distribución de un oficio que repites. El membrete, los colores y la firma se cambian en Perfil.</p><div class="lista">'+
+    (L.length?L.map(p=>'<div class="item"><div class="cuerpo"><span class="tit">'+esc(p.nombre)+'</span><div class="small muted">'+esc(p.mat||'Sin materia')+(p.aNombre?' · A: '+esc(p.aNombre):'')+(p.tipo==='amp'?' · con ficha de derivación':'')+'</div></div><div class="acc"><button class="btn sm pri" data-a="pl-usar" data-id="'+p.id+'">Usar</button><button class="btn sm" data-a="pl-editar" data-id="'+p.id+'">Editar</button><button class="btn sm ico" data-a="pl-borrar" data-id="'+p.id+'" title="Eliminar plantilla" aria-label="Eliminar plantilla">'+ic('trash')+'</button></div></div>').join(''):'<p class="muted">Aún no hay plantillas. Crea una nueva o abre un oficio ya escrito y usa «Guardar como plantilla».</p>')+'</div></div>';
+}
+function hojaPlantilla(p,nueva){
+  S.plEd={id:p.id,nueva:!!nueva};
+  hoja('<h2>'+(nueva?'Nueva plantilla':'Editar plantilla')+'</h2>'+
+    '<div class="grid2"><label class="f"><span>Nombre de la plantilla</span><input id="pl-nombre" value="'+esc(p.nombre)+'" placeholder="Ej.: Solicitud de reemplazo docente" autocomplete="off"></label><label class="f"><span>Formato</span><select id="pl-tipo"><option value="ordinario">Oficio ordinario</option><option value="amp"'+(p.tipo==='amp'?' selected':'')+'>Con ficha de derivación (medida de protección)</option></select></label></div>'+
+    '<label class="f"><span>MAT.</span><input id="pl-mat" value="'+esc(p.mat)+'"></label>'+
+    '<div class="grid2"><label class="f"><span>A (nombre)</span><input id="pl-an" value="'+esc(p.aNombre)+'" placeholder="Opcional"></label><label class="f"><span>A (cargo)</span><input id="pl-ac" value="'+esc(p.aCargo)+'" placeholder="Opcional"></label></div>'+
+    '<label class="f"><span>Cuerpo</span><textarea id="pl-cuerpo" style="min-height:220px">'+esc(p.cuerpo)+'</textarea></label>'+
+    '<p class="small muted">Escribe entre corchetes lo que se completa cada vez, por ejemplo [NOMBRE DEL DOCENTE]: la revisión del oficio avisa si queda alguno sin completar. Se reemplazan solos al crear el oficio: {fecha}, {año}, {escuela}, {director} y {localidad}. Usa «## » para un subtítulo, «- » para una viñeta y **texto** para negrita.</p>'+
+    '<label class="f"><span>Despedida</span><input id="pl-cierre" value="'+esc(p.cierre)+'"></label>'+
+    '<label class="f"><span>Distribución (una por línea)</span><textarea id="pl-dist" style="min-height:80px">'+esc(p.distribucion)+'</textarea></label>'+
+    '<div class="row"><button class="btn pri" data-a="pl-guardar">Guardar plantilla</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>');
 }
 /* ============ WhatsApp: enviar texto a un contacto ============ */
 function soloDigitos(t){return String(t||'').replace(/\D/g,'')}
@@ -1814,6 +2087,41 @@ const ACC={
   'drive-leer':b=>driveLeer(b),
   'drive-usar':b=>{const f=(S.drvRes||[])[Number(b.dataset.i)];if(!f)return;S.docBorr={nombre:f.title.replace(/\.(docx?|pdf|xlsx?|pptx?|odt)$/i,''),url:urlLimpia(f.viewUrl)};S.tab='docs';cerrarHoja();render();toast('Indica la fecha del aviso y agrégalo.')},
   'crear-avisos':()=>crearAvisos(),
+  'tab-p':b=>{S.tabP=b.dataset.t;S.busP='';render()},
+  'func-ver':b=>hojaFunc(b.dataset.n),
+  'reg-nuevo':b=>hojaReg(b.dataset.tipo||'permiso',b.dataset.n||''),
+  'reg-guardar':()=>guardarReg(),
+  'reg-reintentar':b=>{const r=S.registros.find(x=>x.id===b.dataset.id);if(!r)return;r.estado='pendiente';r.creado=Date.now();cacheP=null;Store.guardar('registros');render();Puente.publicar()},
+  'reg-borrar':b=>{S.registros=S.registros.filter(x=>x.id!==b.dataset.id);cacheP=null;Store.guardar('registros');render();Puente.publicar()},
+  'cerrar-hoja-ir':b=>{cerrarHoja();location.hash=b.getAttribute('href')},
+  'libros-guardar':()=>{if(!S.puente)return;const a=$('#lb-personal').value.trim(),b=$('#lb-reporte').value.trim(),ia=idDrive(a),ib=idDrive(b);
+    if((a&&!ia)||(b&&!ib)){toast('No se reconoce el enlace. Copia el enlace completo del archivo desde Drive.');return}
+    S.puente.libros={personal:ia,reporte:ib,m:Date.now()};cacheP=cacheR=null;Store.guardar('puente');Puente.publicar();render();toast(ia||ib?'Enlaces guardados. La planilla aparecerá en unos minutos.':'Enlaces quitados.')},
+  'rep-enviar':()=>hojaReporte(),
+  'rep-wa':()=>{const t=$('#rp-t').value,R=reporte();hojaWA(t,'Reporte semanal · '+(R&&R.sem.length?semanaR(R).nombre:''))},
+  'rep-copiar':()=>copiar($('#rp-t').value),
+  'rep-compartir':()=>{if(!AND)return;try{AND.compartirTexto('Reporte semanal',$('#rp-t').value)}catch(e){toast('No se pudo compartir.')}},
+  'rep-correo':()=>hojaCorreoReporte($('#rp-t').value),
+  'rep-correo-si':()=>{const R=reporte();if(!R||!S.puente)return;const para=$('#rc-para').value.trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(para)){toast('Escribe el correo de destino.');return}
+    const s=semanaR(R);S.registros.push({id:nid(),clase:'correo',para:para,asunto:$('#rc-asunto').value.trim(),cuerpo:String(S.repTexto||'').replace(/\*/g,''),adjunto:$('#rc-adj').checked?R.L.archivo:'',resumen:'Correo con el reporte · '+s.nombre,cuenta:R.L.cuenta||'',creado:Date.now(),estado:'pendiente'});
+    S.puente.repPara=para;Store.guardar('puente');Store.guardar('registros');cerrarHoja();render();Puente.publicar();toast('El borrador aparecerá en Gmail en unos minutos.')},
+  'rep-marcar':()=>{const R=reporte();if(!R||!S.puente)return;const s=semanaR(R);S.puente.enviados=Object.assign({},S.puente.enviados,{[s.nombre]:Date.now()});Store.guardar('puente');cerrarHoja();render();toast('Reporte marcado como enviado.')},
+  'rep-desmarcar':()=>{const R=reporte();if(!R||!S.puente)return;const e=Object.assign({},S.puente.enviados);delete e[semanaR(R).nombre];S.puente.enviados=e;Store.guardar('puente');render()},
+  'pl-nueva':()=>hojaPlantilla(plantillaVacia(),true),
+  'pl-editar':b=>{const p=S.plantillas.find(x=>x.id===b.dataset.id);if(p)hojaPlantilla(p,false)},
+  'pl-guardar':()=>{const e=S.plEd;if(!e)return;const nombre=$('#pl-nombre').value.trim();if(!nombre){toast('Ponle un nombre a la plantilla.');return}
+    const d={nombre:nombre,tipo:$('#pl-tipo').value==='amp'?'amp':'ordinario',mat:$('#pl-mat').value.trim(),aNombre:$('#pl-an').value.trim(),aCargo:$('#pl-ac').value.trim(),cuerpo:$('#pl-cuerpo').value,cierre:$('#pl-cierre').value.trim(),distribucion:$('#pl-dist').value};
+    const p=S.plantillas.find(x=>x.id===e.id);if(p)Object.assign(p,d);else S.plantillas.push(Object.assign({id:e.id},d));S.plEd=null;Store.guardar('plantillas');cerrarHoja();render();toast('Plantilla guardada.')},
+  'pl-borrar':b=>confirmar('¿Eliminar esta plantilla? Los oficios ya creados con ella no cambian.',()=>{S.plantillas=S.plantillas.filter(x=>x.id!==b.dataset.id);Store.guardar('plantillas');render()}),
+  'pl-usar':b=>{const p=S.plantillas.find(x=>x.id===b.dataset.id);if(!p)return;cerrarHoja();crearOficio(oficioDePlantilla(p))},
+  'pl-elegir':()=>hoja('<h2>Nuevo oficio desde plantilla</h2><div class="lista">'+S.plantillas.slice().sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre))).map(p=>'<div class="item"><div class="cuerpo"><span class="tit">'+esc(p.nombre)+'</span><div class="small muted">'+esc(p.mat||'Sin materia')+'</div></div><div class="acc"><button class="btn sm pri" data-a="pl-usar" data-id="'+p.id+'">Usar</button></div></div>').join('')+'</div><div class="row"><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>'),
+  'pl-desde-oficio':()=>{const o=actual();if(!o||S.ed.t!=='oficio')return;
+    hoja('<h2>Guardar como plantilla</h2><label class="f"><span>Nombre de la plantilla</span><input id="pl-nombre" value="'+esc(o.mat||'')+'" autocomplete="off"></label>'+
+      '<p class="small muted">Se guardan la materia, el destinatario, el cuerpo, la despedida y la distribución de este oficio. No se guardan el número, la fecha ni la ficha de derivación.</p>'+
+      '<div class="aviso">Antes de guardar, reemplaza en la plantilla los nombres y datos del caso por marcadores entre corchetes, por ejemplo [NOMBRE]. Puedes hacerlo después con «Editar» en la lista de plantillas.</div>'+
+      '<div class="row"><button class="btn pri" data-a="pl-desde-oficio-si">Guardar plantilla</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>')},
+  'pl-desde-oficio-si':()=>{const o=actual();if(!o)return;const nombre=$('#pl-nombre').value.trim();if(!nombre){toast('Ponle un nombre a la plantilla.');return}
+    S.plantillas.push({id:nid(),nombre:nombre,tipo:o.tipo==='amp'?'amp':'ordinario',mat:o.mat||'',aNombre:o.aNombre||'',aCargo:o.aCargo||'',cuerpo:o.cuerpo||'',cierre:o.cierre||'',distribucion:o.distribucion||''});Store.guardar('plantillas');cerrarHoja();toast('Plantilla guardada. La encuentras al final del libro de oficios.')},
   'tab':b=>{S.tab=b.dataset.t;render()},
   'nuevo-evento':()=>hojaEvento(eventoVacio(),true),
   'editar-evento':b=>{const e=S.eventos.find(x=>x.id===b.dataset.id);if(e)hojaEvento(e,false)},
@@ -1901,6 +2209,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('input',e=>{
   const el=e.target;if(el.dataset&&el.dataset.mem){S[el.dataset.mem]=el.value;return}
   if(el.dataset&&el.dataset.aInput==='wa'){actualizarWA();return}
+  if(el.dataset&&el.dataset.aInput==='bus-p'){S.busP=el.value;const l=$('#lp');if(l)l.innerHTML=listaP();return}
   if(!el.dataset||!el.dataset.bind||el.type==='checkbox'||el.tagName==='SELECT')return;
   enlazar(el);
 });
@@ -1910,6 +2219,7 @@ document.addEventListener('change',e=>{
   if(el.dataset.aChange==='dest'){const o=actual(),d=(S.perfil.destinatarios||[])[Number(el.value)];if(o&&d&&el.value!==''){o.aNombre=d.nombre;o.aCargo=d.cargo;Store.guardar('oficios');render()}return}
   if(el.dataset.aChange==='wa'){const c=(S.perfil.contactos||[])[Number(el.value)];if(c&&el.value!==''){const n=$('#wa-n');if(n)n.value=c.telefono}actualizarWA();return}
   if(el.dataset.aChange==='ver-frase'){const f=$('#sy-f');if(f)f.type=el.checked?'text':'password';return}
+  if(el.dataset.aChange==='sem-r'){S.semR=el.value;render();return}
   if(el.dataset.aChange==='caldef'){S.perfil.calDefecto=el.value;Store.guardar('perfil');render();return}
   if(el.dataset.aChange==='ia-ok'){const x=actual();if(x&&el.checked){x.iaSinRevisar=false;Store.guardar(S.ed.t==='oficio'?'oficios':'actas');render()}return}
   if(el.dataset.img&&el.files&&el.files[0]){cargarImagen(el.files[0],el.dataset.img);return}
@@ -1985,7 +2295,9 @@ async function arrancar(){
   const soloEj=[S.plazos,S.oficios,S.actas].every(l=>l.every(x=>x.ejemplo));
   if(primera||(sembrado&&soloEj))ejemplos();
   if(primera||sembrado)CLAVES.forEach(k=>Store.guardar(k));
+  S.libros={personal:lsG('libro_personal'),reporte:lsG('libro_reporte')};
   Sync.iniciar();Puente.preparar();
+  {const lim=Date.now()-14*864e5,n0=S.registros.length;S.registros=S.registros.filter(r=>!((r.estado==='anotado'||r.estado==='borrador')&&r.creado<lim));if(S.registros.length!==n0)Store.guardar('registros')}
   S.cargando=false;aplicarTema();pintarEstado();render();
   if(S.compartidoPend){const t=S.compartidoPend;S.compartidoPend=null;recibirCompartido(t)}else window.__compartido();
   if(document.querySelector('link[rel="manifest"]')&&'serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
