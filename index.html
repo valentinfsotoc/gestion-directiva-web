@@ -717,13 +717,13 @@ let toastT;function toast(m){let t=$('#toast');if(!t){t=document.createElement('
 /* ============ estado y datos base ============ */
 const PERFIL_BASE={nombre:'ESCUELA EJEMPLO',linea2:'Sostenedor  ·  Localidad',telefono:'',correo:'',localidad:'Localidad',
   director:'SR(A). NOMBRE DIRECTOR(A)',cargo:'DIRECTOR(A) ESCUELA EJEMPLO',iniciales:'',
-  colores:{primario:'#2f5d7c',oscuro:'#1e3d52',acento:'#e0a526'},siguienteOficio:1,calendarios:[],calDefecto:'',
+  colores:{primario:'#2f5d7c',oscuro:'#1e3d52',acento:'#e0a526'},siguienteOficio:1,calendarios:[],calDefecto:'',contactos:[],
   destinatarios:[{nombre:'SR(A). NOMBRE JEFE(A) DAEM',cargo:'JEFE(A) DAEM'}],
   areas:['Dirección','UTP','Inspectoría','PIE','Varios'],nomina:[],
   tiposActa:['Consejo Técnico','Consejo de Profesores','Consejo Escolar','Equipo Directivo','Entrevista con apoderado','Reunión con sostenedor']};
-const S={cargando:true,perfil:JSON.parse(JSON.stringify(PERFIL_BASE)),plazos:[],oficios:[],actas:[],eventos:[],docs:[],cumples:[],logo:null,firma:null,ed:null,filtro:'pendientes',tab:'eventos',nota:'',prop:null,ia:null,dict:null,dl:null,mcp:null};
-const CLAVES=['perfil','plazos','oficios','actas','logo','firma','eventos','docs','cumples'];
-const LISTAS=['plazos','oficios','actas','eventos','docs','cumples'];
+const S={cargando:true,perfil:JSON.parse(JSON.stringify(PERFIL_BASE)),plazos:[],oficios:[],actas:[],eventos:[],docs:[],cumples:[],correos:[],puente:null,logo:null,firma:null,ed:null,filtro:'pendientes',tab:'eventos',nota:'',prop:null,ia:null,dict:null,dl:null,mcp:null};
+const CLAVES=['perfil','plazos','oficios','actas','logo','firma','eventos','docs','cumples','correos','puente'];
+const LISTAS=['plazos','oficios','actas','eventos','docs','cumples','correos'];
 
 /* ============ guardado: cuenta (privado por persona) o este dispositivo ============ */
 const Store={modo:'sesion',db:null,uidv:null,user:null,t:{},cola:{},
@@ -826,7 +826,7 @@ function cuando(f){if(!f)return 'Sin fecha';const d=diasHasta(f);return d===0?'H
 function proxCumple(c){const h=new Date(hoyISO()+'T12:00:00'),y=h.getFullYear();for(let n=0;n<2;n++){let d=new Date(y+n,c.mes-1,c.dia,12);if(d.getMonth()!==c.mes-1)d=new Date(y+n,c.mes,0,12);if(d>=h)return iso(d)}return ''}
 function pendientes(){
   const L=[];
-  S.plazos.forEach(p=>{if(p.estado!=='cumplido')L.push({k:'plazo',id:p.id,titulo:p.titulo,sub:[p.origen,p.via].filter(Boolean).join(' · '),fecha:p.fecha,ej:p.ejemplo})});
+  S.plazos.forEach(p=>{if(p.estado!=='cumplido')L.push({k:'plazo',id:p.id,titulo:p.titulo,sub:[p.origen,p.via].filter(Boolean).join(' · '),fecha:p.fecha,ej:p.ejemplo,nota:p.nota,correo:p.correo})});
   S.oficios.forEach(o=>{if(o.estado==='enviado')L.push({k:'oficio',id:o.id,titulo:'Respuesta pendiente: Oficio N°'+o.numero,sub:o.mat||'',fecha:o.plazoRespuesta||'',ej:o.ejemplo})});
   S.actas.forEach(a=>(a.acuerdos||[]).forEach((c,i)=>{if(c.texto&&!c.hecho)L.push({k:'acuerdo',id:a.id,i:i,titulo:c.texto,sub:'Acuerdo de '+a.tipo+(c.responsable?' · '+c.responsable:''),fecha:c.plazo||'',ej:a.ejemplo})}));
   S.docs.forEach(d=>{if(d.estado!=='listo')L.push({k:'doc',id:d.id,titulo:d.accion+': '+d.nombre,sub:'Documento'+(d.anual?' · se repite cada año':''),fecha:d.fecha,url:d.url})});
@@ -884,7 +884,7 @@ function filaPend(it){
   const tit=it.k==='plazo'?'<span class="tit">'+esc(it.titulo)+'</span>':
     it.k==='doc'?(urlOk(it.url)?'<a class="tit" href="'+esc(it.url)+'" target="_blank" rel="noopener">'+esc(it.titulo)+'</a>':'<span class="tit">'+esc(it.titulo)+'</span>'):
     '<button class="tit" data-a="'+(it.k==='oficio'?'abrir-oficio':ev?'editar-evento':'abrir-acta')+'" data-id="'+it.id+'">'+esc(it.titulo)+'</button>';
-  return '<div class="item '+(ev?'ev':nivelFecha(it.fecha))+'"><div class="cuerpo">'+tit+'<div class="small muted">'+esc(it.sub)+(it.ej?' · <span class="pill ej">Ejemplo</span>':'')+'</div><div class="small"><b>'+(ev?cuando(it.fecha):relativo(it.fecha))+'</b>'+(it.fecha?' · '+fechaCorta(it.fecha):'')+(it.hora?' · '+esc(it.hora):'')+'</div></div><div class="acc">'+btnCal(it.k,it.id,it.i)+
+  return '<div class="item '+(ev?'ev':nivelFecha(it.fecha))+'"><div class="cuerpo">'+tit+'<div class="small muted">'+esc(it.sub)+(it.ej?' · <span class="pill ej">Ejemplo</span>':'')+'</div>'+(it.nota?'<div class="small muted" style="white-space:pre-line;overflow-wrap:anywhere">'+esc(String(it.nota).slice(0,220))+(String(it.nota).length>220?'…':'')+'</div>':'')+'<div class="small"><b>'+(ev?cuando(it.fecha):relativo(it.fecha))+'</b>'+(it.fecha?' · '+fechaCorta(it.fecha):'')+(it.hora?' · '+esc(it.hora):'')+'</div></div><div class="acc">'+btnCal(it.k,it.id,it.i)+
     (ev?'':'<button class="btn sm ico" data-a="cumplir" data-k="'+it.k+'" data-id="'+it.id+'" data-i="'+(it.i==null?'':it.i)+'" title="'+(it.k==='oficio'?'Marcar respondido':'Marcar cumplido')+'" aria-label="'+(it.k==='oficio'?'Marcar respondido':'Marcar cumplido')+'">'+ic('check')+'</button>')+'</div></div>';
 }
 
@@ -914,7 +914,7 @@ function vHoy(){
     '<p class="small muted">En el teléfono también puedes dictar con el micrófono del teclado. Todavía no se pueden cargar archivos de audio.</p>'+
     '<div class="row"><button class="btn pri needs-ia" data-a="nv-ia">'+ic('ia')+'Interpretar con IA</button><button class="btn" data-a="nv-evento">'+ic('agenda')+'Evento</button><button class="btn" data-a="nv-pendiente">'+ic('plazos')+'Pendiente</button><button class="btn" data-a="nv-acta">'+ic('actas')+'Acta</button></div></div>'+
     (cu.length?'<div class="card"><h2>Cumpleaños de la semana</h2><div class="lista">'+cu.map(x=>'<div class="item ev"><div class="cuerpo"><span class="tit">'+esc(x.c.nombre)+'</span><div class="small"><b>'+cuando(x.f)+'</b> · '+x.c.dia+' de '+MESES[x.c.mes-1]+(x.c.grupo?' · '+esc(x.c.grupo):'')+'</div></div></div>').join('')+'</div></div>':'')+
-    '<div class="card"><div class="row between"><h2>Lo que viene</h2><a class="btn sm" href="#agenda">Ver agenda</a></div><div class="lista">'+(L.length?L.slice(0,8).map(filaPend).join(''):'<p class="muted">No tienes pendientes ni eventos registrados.</p>')+'</div></div>';
+    htmlCorreosHoy()+'<div class="card"><div class="row between"><h2>Lo que viene</h2><a class="btn sm" href="#agenda">Ver agenda</a></div><div class="lista">'+(L.length?L.slice(0,8).map(filaPend).join(''):'<p class="muted">No tienes pendientes ni eventos registrados.</p>')+'</div></div>';
 }
 
 function vAgenda(){
@@ -934,11 +934,11 @@ function tEventos(){
 function tPlazos(){
   const todos=pendientes(),cum=S.plazos.filter(p=>p.estado==='cumplido');
   const ops=a=>a.map(x=>'<option>'+x+'</option>').join('');
-  return '<div class="card"><h2>Registrar requerimiento</h2><div class="grid2"><label class="f"><span>Qué se pide</span><input id="np-t" autocomplete="off"></label><label class="f"><span>Fecha límite</span><input id="np-f" type="date" value="'+masDias(hoyISO(),5)+'"></label></div>'+
+  return htmlCorreosAgenda()+'<div class="card"><h2>Registrar requerimiento</h2><div class="grid2"><label class="f"><span>Qué se pide</span><input id="np-t" autocomplete="off"></label><label class="f"><span>Fecha límite</span><input id="np-f" type="date" value="'+masDias(hoyISO(),5)+'"></label></div>'+
     '<div class="grid2"><label class="f"><span>Quién lo pide</span><select id="np-o">'+ops(['Sostenedor','Superintendencia','Mineduc / Deprov','Tribunal','Apoderado','Interno','Otro'])+'</select></label><label class="f"><span>Vía de llegada</span><select id="np-v">'+ops(['Oficio','Correo','Plataforma','WhatsApp','Presencial','Teléfono'])+'</select></label></div>'+
     '<div class="row"><button class="btn pri" data-a="nuevo-plazo">'+ic('plus')+'Registrar</button></div></div>'+
     '<div class="row"><button class="btn sm'+(S.filtro==='pendientes'?' pri':'')+'" data-a="filtro" data-f="pendientes">Pendientes ('+todos.length+')</button><button class="btn sm'+(S.filtro==='cumplidos'?' pri':'')+'" data-a="filtro" data-f="cumplidos">Cumplidos ('+cum.length+')</button></div>'+
-    '<div class="lista">'+(S.filtro==='pendientes'?(todos.length?todos.map(it=>filaPend(it)+(it.k==='plazo'?'<div class="row" style="margin:-4px 0 6px 16px"><button class="btn sm" data-a="responder-plazo" data-id="'+it.id+'">'+ic('oficios')+'Responder con oficio</button><button class="btn sm" data-a="borrar-plazo" data-id="'+it.id+'">'+ic('trash')+'Eliminar</button></div>':'')).join(''):'<p class="muted">Sin pendientes.</p>')
+    '<div class="lista">'+(S.filtro==='pendientes'?(todos.length?todos.map(it=>filaPend(it)+(it.k==='plazo'?'<div class="row" style="margin:-4px 0 6px 16px"><button class="btn sm" data-a="responder-plazo" data-id="'+it.id+'">'+ic('oficios')+'Responder con oficio</button>'+(it.correo?'<button class="btn sm" data-a="correo-responder" data-id="'+it.correo+'">Responder por correo</button>':'')+'<button class="btn sm" data-a="borrar-plazo" data-id="'+it.id+'">'+ic('trash')+'Eliminar</button></div>':'')).join(''):'<p class="muted">Sin pendientes.</p>')
       :(cum.length?cum.map(p=>'<div class="item hecho ok"><div class="cuerpo"><span class="tit">'+esc(p.titulo)+'</span><div class="small muted">'+esc([p.origen,p.via].join(' · '))+' · '+fechaCorta(p.fecha)+'</div></div><div class="acc"><button class="btn sm" data-a="reabrir" data-id="'+p.id+'">Reabrir</button><button class="btn sm ico" data-a="borrar-plazo" data-id="'+p.id+'" aria-label="Eliminar">'+ic('trash')+'</button></div></div>').join(''):'<p class="muted">Aún no hay requerimientos cumplidos.</p>'))+'</div>';
 }
 function tDocs(){
@@ -990,7 +990,7 @@ function vOficioEd(){
       '<label class="f"><span>Distribución (una por línea)</span><textarea data-ctx="oficio" data-bind="distribucion" style="min-height:80px">'+esc(o.distribucion)+'</textarea></label></div>'+
     (amp?'<div class="card"><h2>Ficha única de derivación</h2><div class="grid2">'+FICHA_A.concat(FICHA_B).map(f=>'<label class="f"><span>'+f[1]+'</span>'+inp('oficio','ficha.'+f[0],(o.ficha||{})[f[0]]||'')+'</label>').join('')+'</div><label class="f"><span>Relato del motivo de derivación</span><textarea data-ctx="oficio" data-bind="ficha.relato" style="min-height:180px">'+esc((o.ficha||{}).relato||'')+'</textarea></label></div>':'')+
     '<div class="card"><h2>Revisión antes de firmar</h2><div class="rev" id="rev"></div>'+(o.iaSinRevisar?'<label class="chk"><input type="checkbox" data-a-change="ia-ok"> <span>Revisé el texto propuesto por la IA y me hago responsable de su contenido.</span></label>':'')+'</div>'+
-    '<div class="card"><div class="row"><button class="btn pri needs-dl" data-a="word-oficio">'+ic('down')+'Descargar Word</button><button class="btn" data-a="copiar-oficio">'+ic('copy')+'Copiar texto</button><button class="btn solo-and" data-a="compartir-word-oficio">'+ic('send')+'Compartir Word</button><button class="btn solo-and" data-a="compartir-texto">'+ic('send')+'Compartir texto</button>'+
+    '<div class="card"><div class="row"><button class="btn pri needs-dl" data-a="word-oficio">'+ic('down')+'Descargar Word</button><button class="btn" data-a="copiar-oficio">'+ic('copy')+'Copiar texto</button><button class="btn" data-a="wa-doc">'+ic('send')+'WhatsApp</button><button class="btn solo-and" data-a="compartir-word-oficio">'+ic('send')+'Compartir Word</button><button class="btn solo-and" data-a="compartir-texto">'+ic('send')+'Compartir texto</button>'+
       (o.estado==='borrador'?'<button class="btn" data-a="enviar-oficio" id="btn-enviar">'+ic('send')+'Marcar como enviado</button>':'')+
       (o.estado==='enviado'?'<button class="btn" data-a="cumplir" data-k="oficio" data-id="'+o.id+'">'+ic('check')+'Marcar respondido</button><button class="btn" data-a="reiterar" data-id="'+o.id+'">Reiterar</button>':'')+
       '<button class="btn" data-a="borrar-oficio" data-id="'+o.id+'">'+ic('trash')+'Eliminar</button></div></div>'+
@@ -1021,7 +1021,7 @@ function vActaEd(){
       (a.acuerdos||[]).map((c,i)=>'<tr><td><textarea data-ctx="acta" data-bind="acuerdos.'+i+'.texto" rows="2">'+esc(c.texto)+'</textarea></td><td>'+inp('acta','acuerdos.'+i+'.responsable',c.responsable)+'</td><td>'+inp('acta','acuerdos.'+i+'.plazo',c.plazo,'type="date"')+'</td><td><button class="btn sm ico" data-a="quitar-acuerdo" data-i="'+i+'" aria-label="Quitar acuerdo">'+ic('trash')+'</button></td></tr>').join('')+
       '</tbody></table></div><div class="row"><button class="btn" data-a="agregar-acuerdo">'+ic('plus')+'Agregar acuerdo</button></div></div>'+
     '<div class="card"><h2>Revisión antes de aprobar</h2><div class="rev" id="rev"></div>'+(a.iaSinRevisar?'<label class="chk"><input type="checkbox" data-a-change="ia-ok"> <span>Revisé el texto propuesto por la IA.</span></label>':'')+'</div>'+
-    '<div class="card"><div class="row"><button class="btn pri needs-dl" data-a="word-acta">'+ic('down')+'Descargar Word</button><button class="btn" data-a="copiar-acta">'+ic('copy')+'Copiar para compartir</button><button class="btn solo-and" data-a="compartir-word-acta">'+ic('send')+'Compartir Word</button><button class="btn solo-and" data-a="compartir-texto">'+ic('send')+'Compartir texto</button>'+(a.estado!=='aprobada'?'<button class="btn" data-a="aprobar-acta">'+ic('check')+'Aprobar acta</button>':'')+'<button class="btn" data-a="borrar-acta" data-id="'+a.id+'">'+ic('trash')+'Eliminar</button></div></div>'+
+    '<div class="card"><div class="row"><button class="btn pri needs-dl" data-a="word-acta">'+ic('down')+'Descargar Word</button><button class="btn" data-a="copiar-acta">'+ic('copy')+'Copiar para compartir</button><button class="btn" data-a="wa-doc">'+ic('send')+'WhatsApp</button><button class="btn solo-and" data-a="compartir-word-acta">'+ic('send')+'Compartir Word</button><button class="btn solo-and" data-a="compartir-texto">'+ic('send')+'Compartir texto</button>'+(a.estado!=='aprobada'?'<button class="btn" data-a="aprobar-acta">'+ic('check')+'Aprobar acta</button>':'')+'<button class="btn" data-a="borrar-acta" data-id="'+a.id+'">'+ic('trash')+'Eliminar</button></div></div>'+
   '</div><div class="prev" id="prev"></div></div>';
 }
 
@@ -1036,7 +1036,8 @@ function vPerfil(){
     '<div class="row">'+(S.logo?'<img src="'+esc(S.logo.src)+'" alt="Insignia cargada" style="height:64px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px"><button class="btn sm" data-a="quitar-img" data-k="logo">Quitar insignia</button>':'<span class="small muted">Sin insignia cargada.</span>')+(S.firma?'<img src="'+esc(S.firma.src)+'" alt="Firma cargada" style="height:64px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px"><button class="btn sm" data-a="quitar-img" data-k="firma">Quitar firma</button>':'<span class="small muted">Sin firma cargada: los documentos salen con línea para firmar a mano.</span>')+'</div></div>'+
   htmlCals()+'<div class="card"><h2>Oficios</h2><div class="grid2"><label class="f"><span>Próximo N° de oficio de este año</span>'+inp('perfil','siguienteOficio',P.siguienteOficio,'type="number" min="1" data-num="1"')+'</label></div><label class="f"><span>Destinatarios frecuentes (uno por línea: NOMBRE | CARGO)</span><textarea data-ctx="perfil" data-bind="destinatarios" data-parse="dest">'+esc((P.destinatarios||[]).map(d=>d.nombre+' | '+d.cargo).join('\n'))+'</textarea></label></div>'+
   '<div class="card"><h2>Actas</h2><label class="f"><span>Tipos de reunión (separados por coma)</span><input data-ctx="perfil" data-bind="tiposActa" data-parse="comas" value="'+esc((P.tiposActa||[]).join(', '))+'"></label><label class="f"><span>Áreas de los temas a abordar (separadas por coma)</span><input data-ctx="perfil" data-bind="areas" data-parse="comas" value="'+esc((P.areas||[]).join(', '))+'"></label><label class="f"><span>Nómina de participantes (uno por línea)</span><textarea data-ctx="perfil" data-bind="nomina" data-parse="lineas" style="min-height:180px">'+esc((P.nomina||[]).join('\n'))+'</textarea></label></div>'+
-  htmlSync()+'<div class="card"><h2>Respaldo</h2><p class="small muted">'+(Store.modo==='cuenta'?'Tus datos se guardan en tu cuenta y solo tú puedes verlos.':Store.modo==='local'?(AND?'Tus datos se guardan solo en este teléfono. Exporta un respaldo con frecuencia; queda en la carpeta Descargas.':'Tus datos se guardan solo en este navegador. Exporta un respaldo con frecuencia.'):'En esta vista no hay guardado: exporta un respaldo antes de cerrar.')+'</p><div class="row"><button class="btn" data-a="exportar">'+ic('down')+'Exportar respaldo</button><label class="btn">Importar respaldo<input type="file" accept=".json,application/json" data-import="1" hidden></label>'+(hayEjemplos()?'<button class="btn" data-a="borrar-ejemplos">Borrar ejemplos</button>':'')+'</div></div>';
+  '<div class="card"><h2>Contactos de WhatsApp</h2><label class="f"><span>Uno por línea: Nombre | número con código de país</span><textarea data-ctx="perfil" data-bind="contactos" data-parse="contactos" style="min-height:90px" placeholder="María Pérez | +56 9 1234 5678">'+esc((P.contactos||[]).map(c=>c.nombre+' | '+c.telefono).join('\n'))+'</textarea></label></div>'+
+  htmlSync()+htmlPuente()+'<div class="card"><h2>Respaldo</h2><p class="small muted">'+(Store.modo==='cuenta'?'Tus datos se guardan en tu cuenta y solo tú puedes verlos.':Store.modo==='local'?(AND?'Tus datos se guardan solo en este teléfono. Exporta un respaldo con frecuencia; queda en la carpeta Descargas.':'Tus datos se guardan solo en este navegador. Exporta un respaldo con frecuencia.'):'En esta vista no hay guardado: exporta un respaldo antes de cerrar.')+'</p><div class="row"><button class="btn" data-a="exportar">'+ic('down')+'Exportar respaldo</button><label class="btn">Importar respaldo<input type="file" accept=".json,application/json" data-import="1" hidden></label>'+(hayEjemplos()?'<button class="btn" data-a="borrar-ejemplos">Borrar ejemplos</button>':'')+'</div></div>';
 }
 
 /* ============ texto con formato simple ============ */
@@ -1459,7 +1460,7 @@ function crearAvisos(){
 /* La dirección de la nube se fija al construir la app o la página; en el prototipo de Claude queda sin configurar.
    En la nube solo hay texto cifrado: la llave sale del correo y la frase secreta, y nunca se envía. */
 const NUBE='https://gestion-directiva-1ce44-default-rtdb.firebaseio.com';
-const OBJ=['perfil','logo','firma'];
+const OBJ=['perfil','logo','firma','puente'];
 function lsG(k){try{const v=localStorage.getItem('gd_'+k);return v==null?null:JSON.parse(v)}catch(e){return null}}
 function lsS(k,v){try{localStorage.setItem('gd_'+k,JSON.stringify(v))}catch(e){}}
 /* texto estable de un valor (llaves ordenadas, sin la marca de tiempo _m) para comparar contenidos */
@@ -1471,6 +1472,8 @@ function estable(v){
 function b64d(u){let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)}
 function b64a(s){const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
 function hexDe(u){return Array.from(u).map(x=>x.toString(16).padStart(2,'0')).join('')}
+function cifrarCon(llave,o){const n=nacl.randomBytes(24),c=nacl.secretbox(new TextEncoder().encode(JSON.stringify(o)),n,llave),u=new Uint8Array(24+c.length);u.set(n);u.set(c,24);return b64d(u)}
+function descifrarCon(llave,t){const u=b64a(t),p=nacl.secretbox.open(u.subarray(24),u.subarray(0,24),llave);if(!p)throw {code:'llave'};return JSON.parse(new TextDecoder().decode(p))}
 const Sync={
   cfg:null,llave:null,tmp:null,sombra:null,tomb:{},meta:{},pend:{},corriendo:false,estado:'',ult:0,es:null,idx:{},pendUI:false,tr:null,ti:null,
   disponible(){return Store.modo==='local'&&/^https?:\/\//.test(NUBE)&&typeof nacl!=='undefined'&&typeof scrypt!=='undefined'},
@@ -1529,14 +1532,15 @@ const Sync={
       this.meta[k]=x.m||0;lsS('meta',this.meta);this.sombra[k]=estable(S[k]==null?null:S[k]);
     }
     lsS(k,S[k]==null?null:S[k]);this.refrescar();
+    if(k==='puente')Puente.preparar();if(k==='correos')Puente.publicar();
   },
   refrescar(){
     aplicarTema();const a=document.activeElement;
     if($('#capa').innerHTML||(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))){this.pendUI=true;if(S.ed)refrescarPrevia();return}
     this.pendUI=false;render();
   },
-  cifrar(o){const n=nacl.randomBytes(24),c=nacl.secretbox(new TextEncoder().encode(JSON.stringify(o)),n,this.llave),u=new Uint8Array(24+c.length);u.set(n);u.set(c,24);return b64d(u)},
-  descifrar(s){const u=b64a(s),p=nacl.secretbox.open(u.subarray(24),u.subarray(0,24),this.llave);if(!p)throw {code:'llave'};return JSON.parse(new TextDecoder().decode(p))},
+  cifrar(o){return cifrarCon(this.llave,o)},
+  descifrar(t){return descifrarCon(this.llave,t)},
   async pedir(url,metodo,cuerpo){
     let r;try{r=await fetch(url,{method:metodo||'GET',body:cuerpo==null?undefined:JSON.stringify(cuerpo),cache:'no-store'})}catch(e){throw {code:'red'}}
     if(!r.ok)throw {code:(r.status===401||r.status===403)?'permiso':'red',status:r.status};
@@ -1639,10 +1643,158 @@ document.addEventListener('focusout',()=>setTimeout(()=>{if(Sync.pendUI)Sync.ref
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Sync.activo())Sync.revisar()});
 window.addEventListener('online',()=>{if(Sync.activo())Sync.correr()});
 
+/* ============ puente de correo: Gmail → aplicación → borradores de respuesta ============ */
+/* Un programa instalado en la cuenta de Google de la persona (herramientas/puente_correo.gs) deja los correos
+   etiquetados en una carpeta aparte de la nube, cifrados con un secreto propio del puente. La aplicación los
+   muestra, y las respuestas vuelven por el mismo camino para quedar como borradores en Gmail. */
+function fechaHoraCorta(isoT){const d=new Date(isoT);if(isNaN(d))return '';const p=n=>String(n).padStart(2,'0');return p(d.getDate())+'-'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes())}
+const Puente={
+  es:null,ti:null,sec:null,llave:null,carpeta:null,revs:{},
+  activo(){return !!(Sync.disponible()&&S.puente&&S.puente.secreto)},
+  codigo(){return S.puente&&S.puente.secreto?'GD1.'+S.puente.secreto:''},
+  url(p){return NUBE.replace(/\/+$/,'')+'/u/'+this.carpeta+'/'+p+'.json'},
+  cerrar(){if(this.es){try{this.es.close()}catch(e){}this.es=null}clearInterval(this.ti)},
+  preparar(){
+    if(!this.activo()){this.cerrar();this.sec=null;return}
+    if(this.sec===S.puente.secreto&&this.es)return;
+    this.cerrar();this.sec=S.puente.secreto;this.llave=b64a(this.sec);this.carpeta=hexDe(nacl.hash(this.llave)).slice(0,64);
+    const g=lsG('prevs');this.revs=(g&&g.sec===this.sec)?g:{sec:this.sec};
+    try{
+      const es=new EventSource(this.url('idx'));this.es=es;let idx={};
+      const h=ev=>{try{const d=JSON.parse(ev.data);if(!d||this.es!==es)return;
+        if(d.path==='/'){if(ev.type==='put')idx=d.data||{};else Object.assign(idx,d.data||{})}else idx[String(d.path).replace(/^\//,'')]=d.data;
+        this.verIdx(idx)}catch(e){}};
+      es.addEventListener('put',h);es.addEventListener('patch',h);
+    }catch(e){}
+    this.ti=setInterval(()=>{if(!document.hidden)this.revisar()},120000);
+    this.revisar();this.publicar();
+  },
+  async revisar(){if(!this.sec)return;try{this.verIdx(await Sync.pedir(this.url('idx'))||{})}catch(e){}},
+  verIdx(idx){
+    if(!this.sec||!idx)return;
+    if(idx.entrada&&idx.entrada!==this.revs.entrada)this.bajar('entrada',idx.entrada);
+    if(idx.estado&&idx.estado!==this.revs.estado)this.bajar('estado',idx.estado);
+  },
+  async bajar(q,rev){
+    if(this['b_'+q])return;this['b_'+q]=true;
+    try{
+      const j=await Sync.pedir(this.url(q));
+      if(j&&j.c){const d=descifrarCon(this.llave,j.c);if(q==='entrada')this.recibir(d);else this.acusar(d)}
+      this.revs[q]=rev;lsS('prevs',this.revs);
+    }catch(e){}
+    this['b_'+q]=false;
+  },
+  /* correos etiquetados que informa el programa de Gmail */
+  recibir(d){
+    const porId={},tomb=(Sync.tomb&&Sync.tomb.correos)||{};let n=0;
+    S.correos.forEach(c=>{porId[c.id]=c});
+    ((d&&d.correos)||[]).forEach(m=>{
+      if(!m||!m.id)return;const id='m-'+m.id;if(tomb[id])return;const a=porId[id];
+      if(!a){S.correos.push({id:id,hilo:String(m.id),asunto:String(m.asunto||'(sin asunto)'),de:String(m.de||''),fecha:String(m.fecha||''),extracto:String(m.extracto||''),url:String(m.url||''),cuenta:String(m.cuenta||''),estado:'nuevo'});n++}
+      else if(m.fecha&&String(m.fecha)>String(a.fecha||'')){a.fecha=String(m.fecha);a.extracto=String(m.extracto||a.extracto||'');a.de=String(m.de||a.de||'');if(a.estado!=='registrado')a.estado='nuevo';n++}
+    });
+    if(d&&d.revisado){lsS('pult',{t:d.revisado,cuenta:d.cuenta||''})}
+    if(n){Store.guardar('correos');Sync.refrescar();toast(n===1?'Llegó una solicitud por correo.':'Llegaron '+n+' solicitudes por correo.')}
+  },
+  /* confirmación de los borradores que el programa ya creó en Gmail */
+  acusar(d){
+    const hechas=(d&&d.hechas)||{};let n=0;
+    if(d&&d.revisado)lsS('pult',{t:d.revisado,cuenta:d.cuenta||''});
+    S.correos.forEach(c=>{const r=c.respuesta;if(r&&r.estado==='pendiente'&&hechas[c.id+'|'+r.creado]){r.estado='borrador';n++}});
+    if(n){Store.guardar('correos');Sync.refrescar();this.publicar();toast(n===1?'El borrador de respuesta ya está en Gmail.':'Los borradores de respuesta ya están en Gmail.')}
+  },
+  /* respuestas pendientes que el programa debe convertir en borradores */
+  async publicar(){
+    if(!this.sec)return;
+    const r=S.correos.filter(c=>c.respuesta&&c.respuesta.estado==='pendiente').map(c=>({id:c.id,hilo:c.hilo,texto:c.respuesta.texto,creado:c.respuesta.creado})).sort((a,b)=>a.id<b.id?-1:1);
+    const j=JSON.stringify(r);if(j===this.revs.salida||(!r.length&&this.revs.salida===undefined))return;
+    try{
+      const rev=Date.now().toString(36);
+      await Sync.pedir(this.url('salida'),'PUT',{c:cifrarCon(this.llave,{respuestas:r}),r:rev});
+      await Sync.pedir(this.url('idx'),'PATCH',{salida:rev});
+      this.revs.salida=j;lsS('prevs',this.revs);
+    }catch(e){clearTimeout(this.tp);this.tp=setTimeout(()=>this.publicar(),20000)}
+  },
+  ultimaRevision(){const u=lsG('pult');return u&&u.t?u:null}
+};
+function correosVisibles(){return S.correos.filter(c=>c.estado!=='descartado').sort((a,b)=>(a.estado==='nuevo'?0:1)-(b.estado==='nuevo'?0:1)||String(b.fecha||'').localeCompare(String(a.fecha||'')))}
+function filaCorreo(c){
+  const nuevo=c.estado==='nuevo',r=c.respuesta;
+  return '<div class="item '+(nuevo?'warn':'')+'"><div class="cuerpo"><span class="tit">'+esc(c.asunto)+'</span><div class="small muted">'+esc(c.de)+(c.fecha?' · '+fechaHoraCorta(c.fecha):'')+(nuevo?' · <span class="pill warn">Nuevo</span>':'')+'</div>'+
+    (c.extracto?'<div class="small" style="white-space:pre-line;overflow-wrap:anywhere">'+esc(c.extracto.slice(0,280))+(c.extracto.length>280?'…':'')+'</div>':'')+
+    (r?'<div class="small" style="margin-top:4px"><span class="pill '+(r.estado==='borrador'?'ok':'n')+'">'+(r.estado==='borrador'?'Borrador creado en Gmail':'Respuesta en camino a Gmail')+'</span></div>':'')+
+    '<div class="row" style="margin-top:8px">'+(urlOk(c.url)?'<a class="btn sm" href="'+esc(c.url)+'" target="_blank" rel="noopener">Abrir en Gmail</a>':'')+
+    '<button class="btn sm pri" data-a="correo-responder" data-id="'+c.id+'">Responder</button>'+
+    (c.estado==='registrado'?'<span class="pill ok">Con plazo registrado</span>':'<button class="btn sm" data-a="correo-registrar" data-id="'+c.id+'">Registrar plazo</button>')+
+    (c.estado==='registrado'?'':'<button class="btn sm" data-a="correo-descartar" data-id="'+c.id+'">Descartar</button>')+'</div></div></div>';
+}
+function htmlCorreosHoy(){
+  const n=S.correos.filter(c=>c.estado==='nuevo');if(!n.length)return '';
+  return '<div class="card"><div class="row between"><h2>Solicitudes por correo ('+n.length+')</h2><button class="btn sm" data-a="tab-ir" data-t="plazos">Ver todas</button></div><div class="lista">'+correosVisibles().filter(c=>c.estado==='nuevo').slice(0,4).map(filaCorreo).join('')+'</div></div>';
+}
+function htmlCorreosAgenda(){
+  const L=correosVisibles();if(!L.length)return Puente.activo()?'<div class="aviso info">Puente de correo activado. Aquí aparecerán los correos que tengan la etiqueta «Gestión Directiva» en Gmail.</div>':'';
+  return '<div class="card"><h2>Correo</h2><div class="lista">'+L.slice(0,25).map(filaCorreo).join('')+'</div></div>';
+}
+function htmlPuente(){
+  if(!Sync.disponible())return '';
+  if(!Puente.activo())return '<div class="card"><h2>Correo</h2><p class="small muted">Haz que las solicitudes que llegan a tu Gmail aparezcan en la aplicación. Se instala una sola vez un pequeño programa en tu cuenta de Google: revisa los correos que tengan la etiqueta «Gestión Directiva» y los envía cifrados. Las respuestas que escribas aquí quedan como borradores en Gmail.</p><div class="row"><button class="btn pri" data-a="puente-activar">Activar el puente de correo</button></div></div>';
+  const u=Puente.ultimaRevision();
+  return '<div class="card"><h2>Correo</h2><p class="small muted">'+(u?'Puente funcionando'+(u.cuenta?' con '+esc(u.cuenta):'')+'. Última revisión del correo: '+fechaHoraCorta(new Date(u.t).toISOString())+'.':'Puente activado en la aplicación. Falta instalar el programa en tu cuenta de Google y pegarle este código.')+'</p>'+
+    '<label class="f"><span>Código del puente</span><input id="pu-cod" readonly value="'+esc(Puente.codigo())+'" style="font-family:ui-monospace,Consolas,monospace;font-size:.85rem"></label>'+
+    '<p class="small muted">El código da acceso solo a los correos del puente, no al resto de tus datos. No lo compartas.</p>'+
+    '<div class="row"><button class="btn pri" data-a="puente-copiar">'+ic('copy')+'Copiar código</button><button class="btn" data-a="puente-desactivar">Desactivar</button></div></div>';
+}
+/* ============ WhatsApp: enviar texto a un contacto ============ */
+function soloDigitos(t){return String(t||'').replace(/\D/g,'')}
+function enlaceWA(numero,texto){const n=soloDigitos(numero),t=String(texto||'');return n.length>=8?'https://wa.me/'+n+'?text='+encodeURIComponent(t.length>3000?t.slice(0,3000)+'…':t):''}
+function hojaWA(texto,titulo){
+  S.waTexto=String(texto||'');const L=S.perfil.contactos||[];
+  hoja('<h2>Enviar por WhatsApp</h2><p class="small muted">'+esc(titulo||'')+'</p>'+
+    (L.length?'<label class="f"><span>Contacto</span><select id="wa-c" data-a-change="wa"><option value="">Elegir contacto…</option>'+L.map((c,i)=>'<option value="'+i+'">'+esc(c.nombre)+'</option>').join('')+'</select></label>':'<p class="small muted">Puedes guardar contactos frecuentes en Perfil.</p>')+
+    '<label class="f"><span>Número con código de país</span><input id="wa-n" data-a-input="wa" inputmode="tel" placeholder="+56 9 1234 5678" autocomplete="off"></label>'+
+    (S.waTexto.length>3000?'<p class="small muted">El texto es largo: se enviarán los primeros 3.000 caracteres. Para el documento completo usa el Word.</p>':'')+
+    '<div class="row"><a class="btn pri" id="wa-ir" target="_blank" rel="noopener" aria-disabled="true" style="opacity:.5;pointer-events:none">'+ic('send')+'Abrir WhatsApp</a><button class="btn" data-a="cerrar-hoja">Cerrar</button></div>');
+}
+function actualizarWA(){
+  const a=$('#wa-ir'),n=$('#wa-n');if(!a||!n)return;const u=enlaceWA(n.value,S.waTexto);
+  if(u){a.href=u;a.style.opacity='';a.style.pointerEvents='';a.removeAttribute('aria-disabled')}else{a.removeAttribute('href');a.style.opacity='.5';a.style.pointerEvents='none';a.setAttribute('aria-disabled','true')}
+}
+/* ============ texto recibido desde otra aplicación (WhatsApp, correo, etc.) ============ */
+function recibirCompartido(t){
+  const x=String(t||'').trim();if(!x)return;S.compartido=x;
+  const ops=a=>a.map(v=>'<option>'+v+'</option>').join('');
+  hoja('<h2>Recibido desde otra aplicación</h2><label class="f"><span>Texto recibido</span><textarea id="rc-t" style="min-height:120px">'+esc(x)+'</textarea></label>'+
+    '<div class="grid3"><label class="f"><span>Vía</span><select id="rc-v">'+ops(['WhatsApp','Correo','Otro'])+'</select></label><label class="f"><span>Quién lo pide</span><input id="rc-o" autocomplete="off"></label><label class="f"><span>Fecha límite</span><input id="rc-f" type="date" value="'+masDias(hoyISO(),3)+'"></label></div>'+
+    '<div class="row"><button class="btn pri" data-a="rc-plazo">Registrar requerimiento</button><button class="btn" data-a="rc-evento">Crear evento</button><button class="btn" data-a="rc-acta">Notas de acta</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>');
+}
+window.__compartido=()=>{if(!AND||!AND.tomarCompartido)return;let t='';try{t=AND.tomarCompartido()}catch(e){}if(t){if(S.cargando){S.compartidoPend=t}else recibirCompartido(t)}};
+
 /* ============ acciones ============ */
 function abrir(t,id){S.ed={t:t,id:id};const h=t==='oficio'?'#oficios':'#actas';if(location.hash!==h)location.hash=h;else render();window.scrollTo(0,0)}
 function crearOficio(o){S.oficios.push(o);Store.guardar('oficios');abrir('oficio',o.id)}
 const ACC={
+  'tab-ir':b=>{S.tab=b.dataset.t;if(location.hash!=='#agenda')location.hash='#agenda';else render()},
+  'puente-activar':()=>{if(!Sync.disponible())return;S.puente={secreto:b64d(nacl.randomBytes(32)),creado:Date.now()};Store.guardar('puente');Puente.preparar();render();toast('Puente activado. Falta instalar el programa en tu cuenta de Google.')},
+  'puente-copiar':()=>copiar(Puente.codigo()),
+  'puente-desactivar':()=>hoja('<h2>¿Desactivar el puente de correo?</h2><p>La aplicación dejará de recibir correos. Para detener también el programa de Gmail, ábrelo en script.google.com y ejecuta «desinstalar».</p><div class="row"><button class="btn pri" data-a="puente-desactivar-si">Desactivar</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>'),
+  'puente-desactivar-si':()=>{cerrarHoja();S.puente=null;Store.guardar('puente');Puente.preparar();render()},
+  'correo-descartar':b=>{const c=S.correos.find(x=>x.id===b.dataset.id);if(c){c.estado='descartado';Store.guardar('correos');render()}},
+  'correo-registrar':b=>{const c=S.correos.find(x=>x.id===b.dataset.id);if(!c)return;hoja('<h2>Registrar plazo</h2><label class="f"><span>Qué se pide</span><textarea id="cg-t" style="min-height:60px">'+esc(c.asunto)+'</textarea></label><label class="f"><span>Fecha límite</span><input id="cg-f" type="date" value="'+masDias(hoyISO(),5)+'"></label><div class="row"><button class="btn pri" data-a="correo-registrar-si" data-id="'+c.id+'">Registrar</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>')},
+  'correo-registrar-si':b=>{const c=S.correos.find(x=>x.id===b.dataset.id);if(!c)return;const p={id:nid(),titulo:$('#cg-t').value.trim()||c.asunto,origen:c.de||'Correo',via:'Correo',fecha:$('#cg-f').value,estado:'pendiente',nota:String(c.extracto||'').slice(0,600),correo:c.id};
+    S.plazos.push(p);c.estado='registrado';c.plazo=p.id;Store.guardar('plazos');Store.guardar('correos');cerrarHoja();render();toast('Plazo registrado.')},
+  'correo-responder':b=>{const c=S.correos.find(x=>x.id===b.dataset.id);if(!c){toast('Ese correo ya no está en la lista.');return}const r=c.respuesta;
+    hoja('<h2>Responder por correo</h2><p class="small muted">'+esc(c.asunto)+' · '+esc(c.de)+'</p><label class="f"><span>Tu respuesta</span><div class="conmic"><textarea id="cx-t" style="min-height:160px">'+esc(r&&r.estado==='pendiente'?r.texto:'')+'</textarea><button class="btn ico needs-mic" data-a="mic" data-target="cx-t" aria-label="Dictar respuesta">'+ic('mic')+'</button></div></label>'+
+      '<p class="small muted">Se guardará como borrador en la misma conversación de Gmail. Puede tardar hasta 5 minutos en aparecer; la revisas y la envías desde Gmail.</p>'+(r&&r.estado==='borrador'?'<p class="small muted">Ya hay un borrador de respuesta para este correo. Si guardas otro, se creará uno adicional.</p>':'')+
+      '<div class="row"><button class="btn pri" data-a="correo-responder-si" data-id="'+c.id+'">Guardar como borrador en Gmail</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>')},
+  'correo-responder-si':b=>{const c=S.correos.find(x=>x.id===b.dataset.id);if(!c)return;const t=$('#cx-t').value.trim();if(!t){toast('Escribe la respuesta.');return}
+    if(!Puente.activo()){toast('El puente de correo no está activado en este dispositivo.');return}
+    c.respuesta={texto:t,estado:'pendiente',creado:Date.now()};if(c.estado==='nuevo')c.estado='visto';Store.guardar('correos');cerrarHoja();render();Puente.publicar();toast('Respuesta en camino a los borradores de Gmail.')},
+  'wa-doc':()=>{const x=actual();if(!x)return;const of=S.ed.t==='oficio';hojaWA(of?textoOficio(x):textoActa(x),of?'Oficio N°'+x.numero+' · '+(x.mat||''):'Acta · '+x.tipo+' · '+fechaCorta(x.fecha))},
+  'rc-plazo':()=>{const t=$('#rc-t').value.trim();if(!t){toast('No hay texto para registrar.');return}const l=t.split('\n')[0].slice(0,140);
+    S.plazos.push({id:nid(),titulo:l,origen:$('#rc-o').value.trim()||'Otro',via:$('#rc-v').value,fecha:$('#rc-f').value,estado:'pendiente',nota:t.length>l.length?t.slice(0,1500):''});Store.guardar('plazos');S.compartido=null;cerrarHoja();S.tab='plazos';S.filtro='pendientes';if(location.hash!=='#agenda')location.hash='#agenda';else render();toast('Requerimiento registrado.')},
+  'rc-evento':()=>{const t=$('#rc-t').value.trim(),e=eventoVacio();e.titulo=t.split('\n')[0].slice(0,120);if(t.length>e.titulo.length)e.detalle=t;hojaEvento(e,true)},
+  'rc-acta':()=>{const a=nuevaActaObj();a.notas=$('#rc-t').value.trim();S.actas.push(a);Store.guardar('actas');cerrarHoja();abrir('acta',a.id)},
   'sync-vincular':b=>syncVincular(b),
   'sync-confirmar':b=>{const ex=!!b.dataset.existe;cerrarHoja();Sync.activar(ex);render();toast('Dispositivo vinculado.')},
   'sync-ahora':()=>{if(!Sync.activo())return;CLAVES.forEach(k=>{Sync.pend[k]=1});Sync.correr()},
@@ -1742,6 +1894,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{
   const el=e.target;if(el.dataset&&el.dataset.mem){S[el.dataset.mem]=el.value;return}
+  if(el.dataset&&el.dataset.aInput==='wa'){actualizarWA();return}
   if(!el.dataset||!el.dataset.bind||el.type==='checkbox'||el.tagName==='SELECT')return;
   enlazar(el);
 });
@@ -1749,6 +1902,7 @@ document.addEventListener('change',e=>{
   const el=e.target;if(!el.dataset)return;
   if(el.dataset.bind&&(el.type==='checkbox'||el.tagName==='SELECT')){enlazar(el);if(el.dataset.rerender)render();return}
   if(el.dataset.aChange==='dest'){const o=actual(),d=(S.perfil.destinatarios||[])[Number(el.value)];if(o&&d&&el.value!==''){o.aNombre=d.nombre;o.aCargo=d.cargo;Store.guardar('oficios');render()}return}
+  if(el.dataset.aChange==='wa'){const c=(S.perfil.contactos||[])[Number(el.value)];if(c&&el.value!==''){const n=$('#wa-n');if(n)n.value=c.telefono}actualizarWA();return}
   if(el.dataset.aChange==='ver-frase'){const f=$('#sy-f');if(f)f.type=el.checked?'text':'password';return}
   if(el.dataset.aChange==='caldef'){S.perfil.calDefecto=el.value;Store.guardar('perfil');render();return}
   if(el.dataset.aChange==='ia-ok'){const x=actual();if(x&&el.checked){x.iaSinRevisar=false;Store.guardar(S.ed.t==='oficio'?'oficios':'actas');render()}return}
@@ -1761,6 +1915,7 @@ function enlazar(el){
   if(el.dataset.num)v=Number(v)||1;
   if(el.dataset.parse==='lineas')v=String(v).split('\n').map(s=>s.trim()).filter(Boolean);
   if(el.dataset.parse==='comas')v=String(v).split(',').map(s=>s.trim()).filter(Boolean);
+  if(el.dataset.parse==='contactos')v=String(v).split('\n').map(x=>x.trim()).filter(Boolean).map(l=>{const q=l.split('|');return {nombre:(q[0]||'').trim(),telefono:(q.slice(1).join('|')||'').trim()}});
   if(el.dataset.parse==='dest')v=String(v).split('\n').map(s=>s.trim()).filter(Boolean).map(l=>{const p=l.split('|');return {nombre:(p[0]||'').trim(),cargo:(p.slice(1).join('|')||'').trim()}});
   setPath(obj,el.dataset.bind,v);
   if(ctx==='perfil'){Store.guardar('perfil');if(el.dataset.tema){aplicarTema();const c=$('#contraste');if(c)c.textContent=contrasteTxt()}}
@@ -1779,8 +1934,8 @@ function imagenADatos(ruta){return new Promise((ok,no)=>{const im=new Image();im
 function importar(file){
   const fr=new FileReader();
   fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d||d.app!=='gestion-directiva'||!d.perfil)throw 0;
-    S.perfil=Object.assign(JSON.parse(JSON.stringify(PERFIL_BASE)),d.perfil);LISTAS.forEach(k=>{S[k]=Array.isArray(d[k])?d[k]:[]});if(!Array.isArray(S.perfil.calendarios))S.perfil.calendarios=[];S.logo=d.logo||null;S.firma=d.firma||null;S.ed=null;
-    CLAVES.forEach(k=>Store.guardar(k));aplicarTema();render();toast('Respaldo importado.')}catch(e){toast('El archivo no es un respaldo válido de esta aplicación.')}};
+    S.perfil=Object.assign(JSON.parse(JSON.stringify(PERFIL_BASE)),d.perfil);LISTAS.forEach(k=>{S[k]=Array.isArray(d[k])?d[k]:[]});if(!Array.isArray(S.perfil.calendarios))S.perfil.calendarios=[];S.logo=d.logo||null;S.firma=d.firma||null;S.puente=d.puente||null;S.ed=null;
+    CLAVES.forEach(k=>Store.guardar(k));Puente.preparar();aplicarTema();render();toast('Respaldo importado.')}catch(e){toast('El archivo no es un respaldo válido de esta aplicación.')}};
   fr.readAsText(file);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='dr-q'){e.preventDefault();const b=$('[data-a="drive-buscar"]');if(b&&!b.disabled)driveBuscar(b)}});
@@ -1824,8 +1979,9 @@ async function arrancar(){
   const soloEj=[S.plazos,S.oficios,S.actas].every(l=>l.every(x=>x.ejemplo));
   if(primera||(sembrado&&soloEj))ejemplos();
   if(primera||sembrado)CLAVES.forEach(k=>Store.guardar(k));
-  Sync.iniciar();
+  Sync.iniciar();Puente.preparar();
   S.cargando=false;aplicarTema();pintarEstado();render();
+  if(S.compartidoPend){const t=S.compartidoPend;S.compartidoPend=null;recibirCompartido(t)}else window.__compartido();
   if(document.querySelector('link[rel="manifest"]')&&'serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 }
 arrancar();
