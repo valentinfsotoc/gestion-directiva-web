@@ -1672,41 +1672,47 @@ const Puente={
   async revisar(){if(!this.sec)return;try{this.verIdx(await Sync.pedir(this.url('idx'))||{})}catch(e){}},
   verIdx(idx){
     if(!this.sec||!idx)return;
-    if(idx.entrada&&idx.entrada!==this.revs.entrada)this.bajar('entrada',idx.entrada);
-    if(idx.estado&&idx.estado!==this.revs.estado)this.bajar('estado',idx.estado);
+    /* cada cuenta de correo conectada escribe sus propios canales: entrada_<cuenta> y estado_<cuenta> */
+    Object.keys(idx).forEach(k=>{if(/^(entrada|estado)(_[0-9a-f]+)?$/.test(k)&&idx[k]&&idx[k]!==this.revs[k])this.bajar(k,idx[k])});
   },
   async bajar(q,rev){
     if(this['b_'+q])return;this['b_'+q]=true;
     try{
       const j=await Sync.pedir(this.url(q));
-      if(j&&j.c){const d=descifrarCon(this.llave,j.c);if(q==='entrada')this.recibir(d);else this.acusar(d)}
+      if(j&&j.c){const d=descifrarCon(this.llave,j.c);if(q.indexOf('entrada')===0)this.recibir(d);else this.acusar(d)}
       this.revs[q]=rev;lsS('prevs',this.revs);
     }catch(e){}
     this['b_'+q]=false;
   },
-  /* correos etiquetados que informa el programa de Gmail */
+  /* correos etiquetados que informa el programa de Gmail de una cuenta */
   recibir(d){
-    const porId={},tomb=(Sync.tomb&&Sync.tomb.correos)||{};let n=0;
+    const porId={},tomb=(Sync.tomb&&Sync.tomb.correos)||{},cuenta=String((d&&d.cuenta)||''),pre=d&&d.cid?'m-'+d.cid+'-':'m-';let n=0,cambio=false;
     S.correos.forEach(c=>{porId[c.id]=c});
     ((d&&d.correos)||[]).forEach(m=>{
-      if(!m||!m.id)return;const id='m-'+m.id;if(tomb[id])return;const a=porId[id];
-      if(!a){S.correos.push({id:id,hilo:String(m.id),asunto:String(m.asunto||'(sin asunto)'),de:String(m.de||''),fecha:String(m.fecha||''),extracto:String(m.extracto||''),url:String(m.url||''),cuenta:String(m.cuenta||''),estado:'nuevo'});n++}
-      else if(m.fecha&&String(m.fecha)>String(a.fecha||'')){a.fecha=String(m.fecha);a.extracto=String(m.extracto||a.extracto||'');a.de=String(m.de||a.de||'');if(a.estado!=='registrado')a.estado='nuevo';n++}
+      if(!m||!m.id)return;const id=pre+m.id;if(tomb[id])return;const v=porId['m-'+m.id],a=porId[id]||(v&&(!v.cuenta||v.cuenta===cuenta)?v:null);   /* v: registro recibido con la versión anterior del programa */
+      if(!a){S.correos.push({id:id,hilo:String(m.id),asunto:String(m.asunto||'(sin asunto)'),de:String(m.de||''),fecha:String(m.fecha||''),extracto:String(m.extracto||''),url:String(m.url||''),cuenta:cuenta,estado:'nuevo'});n++;return}
+      if(!a.cuenta&&cuenta){a.cuenta=cuenta;cambio=true}
+      if(m.fecha&&String(m.fecha)>String(a.fecha||'')){a.fecha=String(m.fecha);a.extracto=String(m.extracto||a.extracto||'');a.de=String(m.de||a.de||'');if(a.estado!=='registrado')a.estado='nuevo';n++}
     });
-    if(d&&d.revisado){lsS('pult',{t:d.revisado,cuenta:d.cuenta||''})}
-    if(n){Store.guardar('correos');Sync.refrescar();toast(n===1?'Llegó una solicitud por correo.':'Llegaron '+n+' solicitudes por correo.')}
+    if(d&&d.revisado)this.marcar(cuenta,d.revisado);
+    if(n||cambio){Store.guardar('correos');Sync.refrescar()}
+    if(n)toast(n===1?'Llegó una solicitud por correo.':'Llegaron '+n+' solicitudes por correo.');
   },
   /* confirmación de los borradores que el programa ya creó en Gmail */
   acusar(d){
-    const hechas=(d&&d.hechas)||{};let n=0;
-    if(d&&d.revisado)lsS('pult',{t:d.revisado,cuenta:d.cuenta||''});
-    S.correos.forEach(c=>{const r=c.respuesta;if(r&&r.estado==='pendiente'&&hechas[c.id+'|'+r.creado]){r.estado='borrador';n++}});
-    if(n){Store.guardar('correos');Sync.refrescar();this.publicar();toast(n===1?'El borrador de respuesta ya está en Gmail.':'Los borradores de respuesta ya están en Gmail.')}
+    const hechas=(d&&d.hechas)||{},err=(d&&d.errores)||{};let n=0,e=0;
+    if(d&&d.revisado)this.marcar(String(d.cuenta||''),d.revisado);
+    S.correos.forEach(c=>{const r=c.respuesta;if(!r||r.estado!=='pendiente')return;const k=c.id+'|'+r.creado;if(hechas[k]){r.estado='borrador';n++}else if(err[k]){r.estado='error';e++}});
+    if(n||e){Store.guardar('correos');Sync.refrescar();this.publicar()}
+    if(n)toast(n===1?'El borrador de respuesta ya está en Gmail.':'Los borradores de respuesta ya están en Gmail.');
+    else if(e)toast('No se pudo crear el borrador: la conversación ya no está en Gmail.');
   },
+  marcar(cuenta,t){const u=lsG('pult')||{},c=(u&&u.cuentas)||{};c[cuenta||'cuenta sin nombre']=t;lsS('pult',{cuentas:c})},
+  cuentas(){const u=lsG('pult')||{},c=u.cuentas||(u.t?{[u.cuenta||'cuenta sin nombre']:u.t}:{});return Object.keys(c).sort().map(k=>({cuenta:k,t:c[k]}))},
   /* respuestas pendientes que el programa debe convertir en borradores */
   async publicar(){
     if(!this.sec)return;
-    const r=S.correos.filter(c=>c.respuesta&&c.respuesta.estado==='pendiente').map(c=>({id:c.id,hilo:c.hilo,texto:c.respuesta.texto,creado:c.respuesta.creado})).sort((a,b)=>a.id<b.id?-1:1);
+    const r=S.correos.filter(c=>c.respuesta&&c.respuesta.estado==='pendiente').map(c=>({id:c.id,hilo:c.hilo,cuenta:c.cuenta||'',texto:c.respuesta.texto,creado:c.respuesta.creado})).sort((a,b)=>a.id<b.id?-1:1);
     const j=JSON.stringify(r);if(j===this.revs.salida||(!r.length&&this.revs.salida===undefined))return;
     try{
       const rev=Date.now().toString(36);
@@ -1714,15 +1720,14 @@ const Puente={
       await Sync.pedir(this.url('idx'),'PATCH',{salida:rev});
       this.revs.salida=j;lsS('prevs',this.revs);
     }catch(e){clearTimeout(this.tp);this.tp=setTimeout(()=>this.publicar(),20000)}
-  },
-  ultimaRevision(){const u=lsG('pult');return u&&u.t?u:null}
+  }
 };
 function correosVisibles(){return S.correos.filter(c=>c.estado!=='descartado').sort((a,b)=>(a.estado==='nuevo'?0:1)-(b.estado==='nuevo'?0:1)||String(b.fecha||'').localeCompare(String(a.fecha||'')))}
 function filaCorreo(c){
   const nuevo=c.estado==='nuevo',r=c.respuesta;
-  return '<div class="item '+(nuevo?'warn':'')+'"><div class="cuerpo"><span class="tit">'+esc(c.asunto)+'</span><div class="small muted">'+esc(c.de)+(c.fecha?' · '+fechaHoraCorta(c.fecha):'')+(nuevo?' · <span class="pill warn">Nuevo</span>':'')+'</div>'+
+  return '<div class="item '+(nuevo?'warn':'')+'"><div class="cuerpo"><span class="tit">'+esc(c.asunto)+'</span><div class="small muted">'+esc(c.de)+(c.fecha?' · '+fechaHoraCorta(c.fecha):'')+(c.cuenta&&Puente.cuentas().length>1?' · llegó a '+esc(c.cuenta):'')+(nuevo?' · <span class="pill warn">Nuevo</span>':'')+'</div>'+
     (c.extracto?'<div class="small" style="white-space:pre-line;overflow-wrap:anywhere">'+esc(c.extracto.slice(0,280))+(c.extracto.length>280?'…':'')+'</div>':'')+
-    (r?'<div class="small" style="margin-top:4px"><span class="pill '+(r.estado==='borrador'?'ok':'n')+'">'+(r.estado==='borrador'?'Borrador creado en Gmail':'Respuesta en camino a Gmail')+'</span></div>':'')+
+    (r?'<div class="small" style="margin-top:4px"><span class="pill '+(r.estado==='borrador'?'ok':r.estado==='error'?'crit':'n')+'">'+(r.estado==='borrador'?'Borrador creado en Gmail':r.estado==='error'?'No se pudo crear el borrador':'Respuesta en camino a Gmail')+'</span></div>':'')+
     '<div class="row" style="margin-top:8px">'+(urlOk(c.url)?'<a class="btn sm" href="'+esc(c.url)+'" target="_blank" rel="noopener">Abrir en Gmail</a>':'')+
     '<button class="btn sm pri" data-a="correo-responder" data-id="'+c.id+'">Responder</button>'+
     (c.estado==='registrado'?'<span class="pill ok">Con plazo registrado</span>':'<button class="btn sm" data-a="correo-registrar" data-id="'+c.id+'">Registrar plazo</button>')+
@@ -1739,8 +1744,9 @@ function htmlCorreosAgenda(){
 function htmlPuente(){
   if(!Sync.disponible())return '';
   if(!Puente.activo())return '<div class="card"><h2>Correo</h2><p class="small muted">Haz que las solicitudes que llegan a tu Gmail aparezcan en la aplicación. Se instala una sola vez un pequeño programa en tu cuenta de Google: revisa los correos que tengan la etiqueta «Gestión Directiva» y los envía cifrados. Las respuestas que escribas aquí quedan como borradores en Gmail.</p><div class="row"><button class="btn pri" data-a="puente-activar">Activar el puente de correo</button></div></div>';
-  const u=Puente.ultimaRevision();
-  return '<div class="card"><h2>Correo</h2><p class="small muted">'+(u?'Puente funcionando'+(u.cuenta?' con '+esc(u.cuenta):'')+'. Última revisión del correo: '+fechaHoraCorta(new Date(u.t).toISOString())+'.':'Puente activado en la aplicación. Falta instalar el programa en tu cuenta de Google y pegarle este código.')+'</p>'+
+  const L=Puente.cuentas();
+  return '<div class="card"><h2>Correo</h2><p class="small muted">'+(L.length?'Cuentas de correo conectadas: '+L.map(x=>esc(x.cuenta)+' (última revisión '+fechaHoraCorta(new Date(x.t).toISOString())+')').join('; ')+'.':'Puente activado en la aplicación. Falta instalar el programa en tu cuenta de Google y pegarle este código.')+'</p>'+
+    '<p class="small muted">Para sumar otra cuenta de correo, instala el mismo programa en esa cuenta de Google, con este mismo código.</p>'+
     '<label class="f"><span>Código del puente</span><input id="pu-cod" readonly value="'+esc(Puente.codigo())+'" style="font-family:ui-monospace,Consolas,monospace;font-size:.85rem"></label>'+
     '<p class="small muted">El código da acceso solo a los correos del puente, no al resto de tus datos. No lo compartas.</p>'+
     '<div class="row"><button class="btn pri" data-a="puente-copiar">'+ic('copy')+'Copiar código</button><button class="btn" data-a="puente-desactivar">Desactivar</button></div></div>';
