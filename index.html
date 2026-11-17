@@ -893,7 +893,7 @@ function filaPend(it){
   const tit=it.k==='plazo'?'<span class="tit">'+esc(it.titulo)+'</span>':
     it.k==='doc'?(urlOk(it.url)?'<a class="tit" href="'+esc(it.url)+'" target="_blank" rel="noopener">'+esc(it.titulo)+'</a>':'<span class="tit">'+esc(it.titulo)+'</span>'):
     '<button class="tit" data-a="'+(it.k==='oficio'?'abrir-oficio':ev?'editar-evento':'abrir-acta')+'" data-id="'+it.id+'">'+esc(it.titulo)+'</button>';
-  return '<div class="item '+(ev?'ev':nivelFecha(it.fecha))+'"><div class="cuerpo">'+tit+'<div class="small muted">'+esc(it.sub)+(it.ej?' · <span class="pill ej">Ejemplo</span>':'')+'</div>'+(it.nota?'<div class="small muted" style="white-space:pre-line;overflow-wrap:anywhere">'+esc(String(it.nota).slice(0,220))+(String(it.nota).length>220?'…':'')+'</div>':'')+(it.adj&&it.adj.length?htmlAdj(it.adj,it.k,it.id,true):'')+'<div class="small"><b>'+(ev?cuando(it.fecha):relativo(it.fecha))+'</b>'+(it.fecha?' · '+fechaCorta(it.fecha):'')+(it.hora?' · '+esc(it.hora):'')+'</div></div><div class="acc">'+btnCal(it.k,it.id,it.i)+
+  return '<div class="item '+(ev?'ev':nivelFecha(it.fecha))+'"><div class="cuerpo">'+tit+'<div class="small muted">'+esc(it.sub)+(it.ej?' · <span class="pill ej">Ejemplo</span>':'')+'</div>'+(it.nota?'<div class="small muted" style="white-space:pre-line;overflow-wrap:anywhere">'+esc(String(it.nota).slice(0,220))+(String(it.nota).length>220?'…':'')+'</div>':'')+(it.adj&&it.adj.length?htmlAdj(it.adj,it.k,it.id,true):'')+'<div class="small"><b>'+(ev?cuando(it.fecha):relativo(it.fecha))+'</b>'+(it.fecha?' · '+fechaCorta(it.fecha):'')+(it.hora?' · '+esc(it.hora):'')+'</div></div><div class="acc">'+btnCal(it.k,it.id,it.i)+(it.k==='plazo'||it.k==='evento'?btnWA(it.k,it.id):'')+
     (ev?'':'<button class="btn sm ico" data-a="cumplir" data-k="'+it.k+'" data-id="'+it.id+'" data-i="'+(it.i==null?'':it.i)+'" title="'+(it.k==='oficio'?'Marcar respondido':'Marcar cumplido')+'" aria-label="'+(it.k==='oficio'?'Marcar respondido':'Marcar cumplido')+'">'+ic('check')+'</button>')+'</div></div>';
 }
 
@@ -931,7 +931,7 @@ function vAgenda(){
   return '<h1>Agenda</h1><div class="tabs">'+T.map(t=>'<button class="btn sm'+(S.tab===t[0]?' pri':'')+'" data-a="tab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'+(S.tab==='plazos'?tPlazos():S.tab==='docs'?tDocs():S.tab==='cumples'?tCumples():tEventos());
 }
 function filaEvento(e,pasado){
-  return '<div class="item ev'+(pasado?' hecho':'')+'"><div class="cuerpo"><button class="tit" data-a="editar-evento" data-id="'+e.id+'">'+esc(e.titulo)+'</button><div class="small muted">'+esc([e.lugar,(dest(e.cal)||{}).nombre].filter(Boolean).join(' · '))+(e.ejemplo?' · <span class="pill ej">Ejemplo</span>':'')+'</div><div class="small"><b>'+cuando(e.fecha)+'</b> · '+fechaCorta(e.fecha)+(e.hora?' · '+esc(e.hora):'')+'</div>'+(e.adjuntos&&e.adjuntos.length?htmlAdj(e.adjuntos,'evento',e.id,true):'')+'</div><div class="acc">'+(pasado?'':btnCal('evento',e.id))+'<button class="btn sm" data-a="acta-de-evento" data-id="'+e.id+'">'+ic('actas')+'Acta</button></div></div>';
+  return '<div class="item ev'+(pasado?' hecho':'')+'"><div class="cuerpo"><button class="tit" data-a="editar-evento" data-id="'+e.id+'">'+esc(e.titulo)+'</button><div class="small muted">'+esc([e.lugar,(dest(e.cal)||{}).nombre].filter(Boolean).join(' · '))+(e.ejemplo?' · <span class="pill ej">Ejemplo</span>':'')+'</div><div class="small"><b>'+cuando(e.fecha)+'</b> · '+fechaCorta(e.fecha)+(e.hora?' · '+esc(e.hora):'')+'</div>'+(e.adjuntos&&e.adjuntos.length?htmlAdj(e.adjuntos,'evento',e.id,true):'')+'</div><div class="acc">'+(pasado?'':btnCal('evento',e.id))+btnWA('evento',e.id)+'<button class="btn sm" data-a="acta-de-evento" data-id="'+e.id+'">'+ic('actas')+'Acta</button></div></div>';
 }
 function tEventos(){
   const h=hoyISO(),ord=(a,b)=>((a.fecha||'')+(a.hora||'')).localeCompare((b.fecha||'')+(b.hora||'')),prox=S.eventos.filter(e=>e.fecha>=h).sort(ord),ant=S.eventos.filter(e=>e.fecha<h).sort(ord).reverse().slice(0,6);
@@ -1306,7 +1306,7 @@ function hojaEvento(e,nuevo,deNota,adjNuevos){
     '<label class="f"><span>Lugar</span><input id="ev-l" value="'+esc(e.lugar)+'"></label><label class="f"><span>Detalle</span><textarea id="ev-x" style="min-height:70px">'+esc(e.detalle)+'</textarea></label>'+
     '<div id="ev-adj">'+htmlAdj(S.evEd.adj,'ev')+'</div>'+selCal('ev-c',e.cal)+
     (e.enCal?'<p class="small muted">Este evento ya se creó en «'+esc(e.enCal)+'». Los cambios que hagas aquí no se actualizan en Google Calendar.</p>':'')+
-    '<div class="row"><button class="btn pri" data-a="guardar-evento">Guardar</button>'+(nuevo?'':'<button class="btn" data-a="borrar-evento">'+ic('trash')+'Eliminar</button>')+'<button class="btn" data-a="cerrar-hoja">Cancelar</button></div>');
+    '<div class="row"><button class="btn pri" data-a="guardar-evento">Guardar</button><button class="btn" data-a="wa-evento-ed" title="Guarda el evento y lo envía por WhatsApp">'+ic('send')+'Guardar y enviar por WhatsApp</button>'+(nuevo?'':'<button class="btn" data-a="borrar-evento">'+ic('trash')+'Eliminar</button>')+'<button class="btn" data-a="cerrar-hoja">Cancelar</button></div>');
 }
 function eventoVacio(){return {id:nid(),titulo:'',fecha:hoyISO(),hora:'',dur:60,lugar:'',detalle:'',cal:'',enCal:''}}
 function semanaTxt(){const o=[];for(let i=0;i<14;i++){const f=masDias(hoyISO(),i),d=new Date(f+'T12:00:00');o.push(DIAS[d.getDay()]+' '+f)}return o.join(', ')}
@@ -1482,7 +1482,7 @@ function crearAvisos(){
 /* ============ sincronización cifrada entre dispositivos ============ */
 /* La dirección de la nube se fija al construir la app o la página; en el prototipo de Claude queda sin configurar.
    En la nube solo hay texto cifrado: la llave sale del correo y la frase secreta, y nunca se envía. */
-const NUBE='https://gestion-directiva-1ce44-default-rtdb.firebaseio.com';
+const NUBE='http://127.0.0.1:8765';
 const OBJ=['perfil','logo','firma','puente'];
 function lsG(k){try{const v=localStorage.getItem('gd_'+k);return v==null?null:JSON.parse(v)}catch(e){return null}}
 function lsS(k,v){try{localStorage.setItem('gd_'+k,JSON.stringify(v))}catch(e){}}
@@ -2107,16 +2107,26 @@ async function anexosActa(a){
 /* ============ WhatsApp: enviar texto a un contacto ============ */
 function soloDigitos(t){return String(t||'').replace(/\D/g,'')}
 function enlaceWA(numero,texto){const n=soloDigitos(numero),t=String(texto||'');return n.length>=8?'https://wa.me/'+n+'?text='+encodeURIComponent(t.length>3000?t.slice(0,3000)+'…':t):''}
+function diaLargo(f){if(!f)return '';const d=new Date(f+'T12:00:00');return DIAS[d.getDay()].replace(/^./,c=>c.toUpperCase())+' '+fechaLarga(f)}
+function firmaWA(){const P=S.perfil,n=String(P.director||'').replace(/^(SR\(A\)|SRA|SR)\.?\s+/i,''),c=String(P.cargo||''),e=String(P.nombre||'');return [n,c&&e&&nrm(c).indexOf(nrm(e))<0?c+', '+e:(c||e)].filter(Boolean).join('\n')}
+function textoEventoWA(e){
+  return ['*'+String(e.titulo||'Aviso').trim()+'*','Fecha: '+diaLargo(e.fecha)+(e.hora?', '+e.hora+' hrs.':''),e.lugar?'Lugar: '+e.lugar:'',e.detalle?'\n'+String(e.detalle).trim():'','',firmaWA()].filter((x,i,a)=>x!==''||(i>0&&a[i-1]!=='')).join('\n').trim();
+}
+function textoPlazoWA(p){
+  return ['*'+String(p.titulo||'Requerimiento').trim()+'*',p.fecha?'Plazo: '+diaLargo(p.fecha):'',p.origen||p.via?'Solicitado por: '+[p.origen,p.via?'vía '+String(p.via).toLowerCase():''].filter(Boolean).join(', '):'',p.nota?'\n'+String(p.nota).trim():'','',firmaWA()].filter((x,i,a)=>x!==''||(i>0&&a[i-1]!=='')).join('\n').trim();
+}
+function btnWA(k,id){return '<button class="btn sm ico" data-a="wa-item" data-k="'+k+'" data-id="'+id+'" title="Enviar por WhatsApp" aria-label="Enviar por WhatsApp">'+ic('send')+'</button>'}
 function hojaWA(texto,titulo){
   S.waTexto=String(texto||'');const L=S.perfil.contactos||[];
   hoja('<h2>Enviar por WhatsApp</h2><p class="small muted">'+esc(titulo||'')+'</p>'+
     (L.length?'<label class="f"><span>Contacto</span><select id="wa-c" data-a-change="wa"><option value="">Elegir contacto…</option>'+L.map((c,i)=>'<option value="'+i+'">'+esc(c.nombre)+'</option>').join('')+'</select></label>':'<p class="small muted">Puedes guardar contactos frecuentes en Perfil.</p>')+
     '<label class="f"><span>Número con código de país</span><input id="wa-n" data-a-input="wa" inputmode="tel" placeholder="+56 9 1234 5678" autocomplete="off"></label>'+
+    (S.waTexto.length<=1500?'<label class="f"><span>Mensaje (puedes ajustarlo)</span><textarea id="wa-t" data-a-input="wa" style="min-height:150px">'+esc(S.waTexto)+'</textarea></label>':'')+
     (S.waTexto.length>3000?'<p class="small muted">El texto es largo: se enviarán los primeros 3.000 caracteres. Para el documento completo usa el Word.</p>':'')+
     '<div class="row"><a class="btn pri" id="wa-ir" target="_blank" rel="noopener" aria-disabled="true" style="opacity:.5;pointer-events:none">'+ic('send')+'Abrir WhatsApp</a><button class="btn" data-a="cerrar-hoja">Cerrar</button></div>');
 }
 function actualizarWA(){
-  const a=$('#wa-ir'),n=$('#wa-n');if(!a||!n)return;const u=enlaceWA(n.value,S.waTexto);
+  const a=$('#wa-ir'),n=$('#wa-n'),t=$('#wa-t');if(!a||!n)return;if(t)S.waTexto=t.value;const u=enlaceWA(n.value,S.waTexto);
   if(u){a.href=u;a.style.opacity='';a.style.pointerEvents='';a.removeAttribute('aria-disabled')}else{a.removeAttribute('href');a.style.opacity='.5';a.style.pointerEvents='none';a.setAttribute('aria-disabled','true')}
 }
 /* ============ texto recibido desde otra aplicación (WhatsApp, correo, etc.) ============ */
@@ -2168,6 +2178,8 @@ const ACC={
     S.recAdj=null;Store.guardar(k==='acta'?'actas':k==='plazo'?'plazos':'eventos');cerrarHoja();
     if(k==='acta')abrir('acta',id);else if(k==='plazo'){S.tab='plazos';S.filtro='pendientes';if(location.hash!=='#agenda')location.hash='#agenda';else render()}else{S.tab='eventos';if(location.hash!=='#agenda')location.hash='#agenda';else render()}
     toast(A.length?(A.length===1?'Archivo agregado.':A.length+' archivos agregados.'):'Texto agregado.')},
+  'wa-item':b=>{const k=b.dataset.k,x=(k==='plazo'?S.plazos:S.eventos).find(y=>y.id===b.dataset.id);if(!x)return;hojaWA(k==='plazo'?textoPlazoWA(x):textoEventoWA(x),(k==='plazo'?'Requerimiento · ':'Evento · ')+x.titulo)},
+  'wa-evento-ed':()=>{const id=S.evEd&&S.evEd.id;ACC['guardar-evento']();if(S.evEd)return;const e=S.eventos.find(x=>x.id===id);if(e)hojaWA(textoEventoWA(e),'Evento · '+e.titulo)},
   'adj-abrir':b=>{try{AND.abrirAdjunto(b.dataset.id)}catch(e){toast('No se pudo abrir el archivo.')}},
   'adj-compartir':b=>{try{AND.compartirAdjuntos(JSON.stringify([b.dataset.id]))}catch(e){toast('No se pudo compartir el archivo.')}},
   'adj-todos':()=>{const a=actual();if(!a)return;const L=(a.adjuntos||[]).filter(adjAqui).map(x=>x.id);if(!L.length){toast('Los archivos de esta acta están en otro teléfono.');return}try{AND.compartirAdjuntos(JSON.stringify(L))}catch(e){toast('No se pudo compartir.')}},
