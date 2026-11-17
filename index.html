@@ -121,7 +121,7 @@ main{flex:1;padding:16px 16px 96px;max-width:1180px;width:100%;margin:0 auto;dis
 .rev i{flex:none;width:10px;height:10px;border-radius:50%;margin-top:6px;background:var(--muted)}
 .rev .crit i{background:var(--crit)} .rev .warn i{background:var(--warn)} .rev .ok i{background:var(--ok)}
 
-.editor{display:grid;grid-template-columns:1fr;gap:16px;align-items:start}
+.editor{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}.editor>*{min-width:0}
 @media (min-width:1050px){.editor{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr)}.editor .prev{position:sticky;top:78px;max-height:calc(100vh - 96px);overflow:auto}}
 .prev{overflow-x:auto}
 .paper{background:#fff;color:#1a1a1a;color-scheme:light;font-family:Carlito,Calibri,'Source Sans 3',sans-serif;font-size:14px;line-height:1.4;padding:26px 30px;border:1px solid #cfd3c9;box-shadow:0 2px 10px rgba(0,0,0,.12);min-width:520px;max-width:760px;margin:0 auto}
@@ -177,6 +177,12 @@ table.tabla input,table.tabla textarea{border:1px solid var(--line);background:v
 .tabs{display:flex;gap:6px;flex-wrap:wrap}
 .nav a{min-width:0}
 @media (max-width:520px){.nav a{font-size:.62rem;letter-spacing:-.01em}.nav svg{width:20px;height:20px}}
+.adjs{display:flex;flex-direction:column;gap:8px;margin:6px 0}.adjs.cmp{flex-direction:row;flex-wrap:wrap}
+.adj{display:flex;gap:10px;align-items:center;min-width:0}.adjs.cmp .adj{max-width:100%}
+.adj-v{flex:0 0 auto;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--surface-2);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.adjs.cmp .adj-v{width:44px;height:44px}.adj-v.otro{cursor:default;opacity:.75}
+.adj-v img{width:100%;height:100%;object-fit:cover;display:block}.adj-ic{font-size:.72rem;font-weight:700;color:var(--muted)}
+.adj-t{display:flex;flex-direction:column;gap:2px;min-width:0}.adj-t>.small:first-child{overflow-wrap:anywhere}.adjs.cmp .adj-t{display:none}
 .tabla{overflow:auto}.tabla table{border-collapse:collapse;font-size:.82rem}.tabla td{border:1px solid var(--line);padding:4px 8px;vertical-align:top;white-space:nowrap}
 .prop{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
 .inl{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 10px;min-height:42px;width:100%}
@@ -829,7 +835,7 @@ function cuando(f){if(!f)return 'Sin fecha';const d=diasHasta(f);return d===0?'H
 function proxCumple(c){const h=new Date(hoyISO()+'T12:00:00'),y=h.getFullYear();for(let n=0;n<2;n++){let d=new Date(y+n,c.mes-1,c.dia,12);if(d.getMonth()!==c.mes-1)d=new Date(y+n,c.mes,0,12);if(d>=h)return iso(d)}return ''}
 function pendientes(){
   const L=[];
-  S.plazos.forEach(p=>{if(p.estado!=='cumplido')L.push({k:'plazo',id:p.id,titulo:p.titulo,sub:[p.origen,p.via].filter(Boolean).join(' · '),fecha:p.fecha,ej:p.ejemplo,nota:p.nota,correo:p.correo})});
+  S.plazos.forEach(p=>{if(p.estado!=='cumplido')L.push({k:'plazo',id:p.id,titulo:p.titulo,sub:[p.origen,p.via].filter(Boolean).join(' · '),fecha:p.fecha,ej:p.ejemplo,nota:p.nota,correo:p.correo,adj:p.adjuntos})});
   S.oficios.forEach(o=>{if(o.estado==='enviado')L.push({k:'oficio',id:o.id,titulo:'Respuesta pendiente: Oficio N°'+o.numero,sub:o.mat||'',fecha:o.plazoRespuesta||'',ej:o.ejemplo})});
   S.actas.forEach(a=>(a.acuerdos||[]).forEach((c,i)=>{if(c.texto&&!c.hecho)L.push({k:'acuerdo',id:a.id,i:i,titulo:c.texto,sub:'Acuerdo de '+a.tipo+(c.responsable?' · '+c.responsable:''),fecha:c.plazo||'',ej:a.ejemplo})}));
   S.docs.forEach(d=>{if(d.estado!=='listo')L.push({k:'doc',id:d.id,titulo:d.accion+': '+d.nombre,sub:'Documento'+(d.anual?' · se repite cada año':''),fecha:d.fecha,url:d.url})});
@@ -887,7 +893,7 @@ function filaPend(it){
   const tit=it.k==='plazo'?'<span class="tit">'+esc(it.titulo)+'</span>':
     it.k==='doc'?(urlOk(it.url)?'<a class="tit" href="'+esc(it.url)+'" target="_blank" rel="noopener">'+esc(it.titulo)+'</a>':'<span class="tit">'+esc(it.titulo)+'</span>'):
     '<button class="tit" data-a="'+(it.k==='oficio'?'abrir-oficio':ev?'editar-evento':'abrir-acta')+'" data-id="'+it.id+'">'+esc(it.titulo)+'</button>';
-  return '<div class="item '+(ev?'ev':nivelFecha(it.fecha))+'"><div class="cuerpo">'+tit+'<div class="small muted">'+esc(it.sub)+(it.ej?' · <span class="pill ej">Ejemplo</span>':'')+'</div>'+(it.nota?'<div class="small muted" style="white-space:pre-line;overflow-wrap:anywhere">'+esc(String(it.nota).slice(0,220))+(String(it.nota).length>220?'…':'')+'</div>':'')+'<div class="small"><b>'+(ev?cuando(it.fecha):relativo(it.fecha))+'</b>'+(it.fecha?' · '+fechaCorta(it.fecha):'')+(it.hora?' · '+esc(it.hora):'')+'</div></div><div class="acc">'+btnCal(it.k,it.id,it.i)+
+  return '<div class="item '+(ev?'ev':nivelFecha(it.fecha))+'"><div class="cuerpo">'+tit+'<div class="small muted">'+esc(it.sub)+(it.ej?' · <span class="pill ej">Ejemplo</span>':'')+'</div>'+(it.nota?'<div class="small muted" style="white-space:pre-line;overflow-wrap:anywhere">'+esc(String(it.nota).slice(0,220))+(String(it.nota).length>220?'…':'')+'</div>':'')+(it.adj&&it.adj.length?htmlAdj(it.adj,it.k,it.id,true):'')+'<div class="small"><b>'+(ev?cuando(it.fecha):relativo(it.fecha))+'</b>'+(it.fecha?' · '+fechaCorta(it.fecha):'')+(it.hora?' · '+esc(it.hora):'')+'</div></div><div class="acc">'+btnCal(it.k,it.id,it.i)+
     (ev?'':'<button class="btn sm ico" data-a="cumplir" data-k="'+it.k+'" data-id="'+it.id+'" data-i="'+(it.i==null?'':it.i)+'" title="'+(it.k==='oficio'?'Marcar respondido':'Marcar cumplido')+'" aria-label="'+(it.k==='oficio'?'Marcar respondido':'Marcar cumplido')+'">'+ic('check')+'</button>')+'</div></div>';
 }
 
@@ -925,7 +931,7 @@ function vAgenda(){
   return '<h1>Agenda</h1><div class="tabs">'+T.map(t=>'<button class="btn sm'+(S.tab===t[0]?' pri':'')+'" data-a="tab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'+(S.tab==='plazos'?tPlazos():S.tab==='docs'?tDocs():S.tab==='cumples'?tCumples():tEventos());
 }
 function filaEvento(e,pasado){
-  return '<div class="item ev'+(pasado?' hecho':'')+'"><div class="cuerpo"><button class="tit" data-a="editar-evento" data-id="'+e.id+'">'+esc(e.titulo)+'</button><div class="small muted">'+esc([e.lugar,(dest(e.cal)||{}).nombre].filter(Boolean).join(' · '))+(e.ejemplo?' · <span class="pill ej">Ejemplo</span>':'')+'</div><div class="small"><b>'+cuando(e.fecha)+'</b> · '+fechaCorta(e.fecha)+(e.hora?' · '+esc(e.hora):'')+'</div></div><div class="acc">'+(pasado?'':btnCal('evento',e.id))+'<button class="btn sm" data-a="acta-de-evento" data-id="'+e.id+'">'+ic('actas')+'Acta</button></div></div>';
+  return '<div class="item ev'+(pasado?' hecho':'')+'"><div class="cuerpo"><button class="tit" data-a="editar-evento" data-id="'+e.id+'">'+esc(e.titulo)+'</button><div class="small muted">'+esc([e.lugar,(dest(e.cal)||{}).nombre].filter(Boolean).join(' · '))+(e.ejemplo?' · <span class="pill ej">Ejemplo</span>':'')+'</div><div class="small"><b>'+cuando(e.fecha)+'</b> · '+fechaCorta(e.fecha)+(e.hora?' · '+esc(e.hora):'')+'</div>'+(e.adjuntos&&e.adjuntos.length?htmlAdj(e.adjuntos,'evento',e.id,true):'')+'</div><div class="acc">'+(pasado?'':btnCal('evento',e.id))+'<button class="btn sm" data-a="acta-de-evento" data-id="'+e.id+'">'+ic('actas')+'Acta</button></div></div>';
 }
 function tEventos(){
   const h=hoyISO(),ord=(a,b)=>((a.fecha||'')+(a.hora||'')).localeCompare((b.fecha||'')+(b.hora||'')),prox=S.eventos.filter(e=>e.fecha>=h).sort(ord),ant=S.eventos.filter(e=>e.fecha<h).sort(ord).reverse().slice(0,6);
@@ -1019,6 +1025,8 @@ function vActaEd(){
     '<div class="card"><h2>Notas de la reunión</h2><label class="chk"><input type="checkbox" data-ctx="acta" data-bind="consentimiento" data-rerender="1"'+(a.consentimiento?' checked':'')+'> <span>Las personas presentes están informadas y de acuerdo con el registro por voz de esta reunión.</span></label>'+
       '<label class="f"><span>Notas (escribe o dicta)</span><div class="conmic"><textarea id="ac-notas" data-ctx="acta" data-bind="notas" style="min-height:150px">'+esc(a.notas)+'</textarea><button class="btn ico needs-mic" data-a="mic" data-target="ac-notas" aria-label="Dictar notas"'+(a.consentimiento?'':' disabled title="Marca primero el consentimiento"')+'>'+ic('mic')+'</button></div></label>'+
       '<div class="row"><button class="btn pri needs-ia" data-a="ia-acta">'+ic('ia')+'Ordenar notas en acta</button><span class="small muted needs-ia">Propone el desarrollo y los acuerdos a partir de tus notas.</span></div></div>'+
+    (((a.adjuntos||[]).length||AND)?'<div class="card"><div class="row between"><h2>Imágenes y documentos</h2>'+((a.adjuntos||[]).some(adjAqui)?'<button class="btn sm" data-a="adj-todos">'+ic('send')+'Enviar todos</button>':'')+'</div>'+
+      ((a.adjuntos||[]).length?htmlAdj(a.adjuntos,'acta',a.id)+'<p class="small muted">Las imágenes guardadas en este teléfono se agregan al final del Word como anexo.</p>':'<p class="small muted">Para agregar fotos o PDF, compártelos desde WhatsApp (o la galería) y elige Gestión Directiva.</p>')+'</div>':'')+
     '<div class="card"><label class="f"><span>Desarrollo de la reunión</span><textarea id="ac-des" data-ctx="acta" data-bind="desarrollo" style="min-height:140px">'+esc(a.desarrollo)+'</textarea></label></div>'+
     '<div class="card"><h2>Acuerdos</h2><p class="small muted">Cada acuerdo con plazo aparece en «Hoy» y en «Plazos» hasta que se cumpla.</p><div style="overflow-x:auto"><table class="tabla"><thead><tr><th style="min-width:200px">Acuerdo</th><th style="min-width:130px">Responsable</th><th>Plazo</th><th></th></tr></thead><tbody>'+
       (a.acuerdos||[]).map((c,i)=>'<tr><td><textarea data-ctx="acta" data-bind="acuerdos.'+i+'.texto" rows="2">'+esc(c.texto)+'</textarea></td><td>'+inp('acta','acuerdos.'+i+'.responsable',c.responsable)+'</td><td>'+inp('acta','acuerdos.'+i+'.plazo',c.plazo,'type="date"')+'</td><td><button class="btn sm ico" data-a="quitar-acuerdo" data-i="'+i+'" aria-label="Quitar acuerdo">'+ic('trash')+'</button></td></tr>').join('')+
@@ -1131,7 +1139,7 @@ function copiar(txt){
   try{navigator.clipboard.writeText(txt).then(()=>toast('Texto copiado. Pégalo en el correo o en WhatsApp.'),fallo)}catch(e){fallo()}
 }
 function hoja(html){$('#capa').innerHTML='<div class="hoja-bg" data-a="cerrar-hoja-bg"><div class="hoja" role="dialog" aria-modal="true">'+html+'</div></div>'}
-function cerrarHoja(){$('#capa').innerHTML='';if(Sync.pendUI)setTimeout(()=>{if(Sync.pendUI)Sync.refrescar()},80)}
+function cerrarHoja(){descartarRecibidos();$('#capa').innerHTML='';if(Sync.pendUI)setTimeout(()=>{if(Sync.pendUI)Sync.refrescar()},80)}
 
 /*DOCX-START*/
 /* ============ documentos Word con el formato institucional ============ */
@@ -1187,7 +1195,7 @@ function docOficio(D,o,P,logo,firma){
     const rel=wCuerpo(D,f.relato);ch.push(new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},rows:[new D.TableRow({children:[new D.TableCell({borders:{top:b,bottom:b,left:b,right:b},margins:{top:100,bottom:100,left:120,right:120},children:rel.length?rel:[new D.Paragraph({children:[]})]})]})]}))}
   return new D.Document({sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:1700,right:1800,bottom:993,left:1418,header:284,footer:720}}},headers:{default:wMembrete(D,P,logo,9022)},children:ch}]});
 }
-function docActa(D,a,P,logo){
+function docActa(D,a,P,logo,anexos){
   const pc=hx(P.colores.primario),pd=hx(P.colores.oscuro),C=D.AlignmentType.CENTER,b={style:D.BorderStyle.SINGLE,size:4,color:'000000'},bs={top:b,bottom:b,left:b,right:b},
     relleno=f=>({type:D.ShadingType.CLEAR,fill:f,color:'auto'}),
     barra=(t,sz,al)=>new D.Paragraph({alignment:al||D.AlignmentType.LEFT,shading:relleno(pc),spacing:{before:260,after:120},children:[new D.TextRun({text:' '+t,bold:true,color:'FFFFFF',font:sz>20?'Georgia':'Calibri',size:sz})]}),
@@ -1213,6 +1221,15 @@ function docActa(D,a,P,logo){
   const ac=(a.acuerdos||[]).filter(c=>c.texto),fa=[new D.TableRow({tableHeader:true,children:[th('N°',WA[0]),th('ACUERDO',WA[1]),th('RESPONSABLE',WA[2]),th('PLAZO',WA[3])]})];
   (ac.length?ac:[{texto:'',responsable:'',plazo:''}]).forEach((c,i)=>fa.push(new D.TableRow({children:[cel(String(i+1),{al:C,cell:{width:wDx(D,WA[0])}}),cel(c.texto,{cell:{width:wDx(D,WA[1])}}),cel(c.responsable,{cell:{width:wDx(D,WA[2])}}),cel(c.plazo?fechaCorta(c.plazo):'',{cell:{width:wDx(D,WA[3])}})]})));
   ch.push(new D.Table({width:wDx(D,10240),layout:D.TableLayoutType.FIXED,columnWidths:WA,rows:fa}));
+  if(anexos&&anexos.length){
+    ch.push(barra('ANEXOS',18));
+    anexos.forEach((x,i)=>{
+      if(x.img){const f=Math.min(640/x.img.ancho,760/x.img.alto,1),w=Math.round(x.img.ancho*f),h=Math.round(x.img.alto*f);
+        ch.push(new D.Paragraph({alignment:C,keepNext:true,spacing:{before:200},children:[new D.ImageRun({data:x.img.data,transformation:{width:w,height:h}})]}));
+        ch.push(new D.Paragraph({alignment:C,spacing:{after:200},children:wRuns(D,'Anexo '+(i+1)+': '+x.nombre,{size:17,italics:true,color:'595959'})}));}
+      else ch.push(new D.Paragraph({spacing:{before:120},children:wRuns(D,'Anexo '+(i+1)+': '+x.tipo+' «'+x.nombre+'»'+(x.tipo==='Imagen'?' (guardada en «'+(x.dispNombre||'otro teléfono')+'»)':' (se adjunta por separado)'),{size:20})}));
+    });
+  }
   const pie=new D.Footer({children:[new D.Paragraph({alignment:C,border:{top:{style:D.BorderStyle.SINGLE,size:4,color:'A6A6A6',space:4}},children:[new D.TextRun({text:(P.nombre||'')+'   ·   Acta de Reunión · '+(a.tipo||'')+'   ·   Pág. ',font:'Calibri',size:15,color:'595959'}),new D.TextRun({children:[D.PageNumber.CURRENT],font:'Calibri',size:15,color:'595959'})]})]});
   return new D.Document({sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:1900,right:1000,bottom:1000,left:1000,header:400,footer:400}}},headers:{default:wMembrete(D,P,logo,10240)},footers:{default:pie},children:ch}]});
 }
@@ -1221,7 +1238,7 @@ async function descargarWord(tipo,compartir){
   const x=actual();if(!x)return;
   if(!S.dl||!window.docx){toast('La descarga no está disponible en esta vista. Usa «Copiar».');return}
   try{
-    const D=window.docx,doc=tipo==='oficio'?docOficio(D,x,S.perfil,S.logo,S.firma):docActa(D,x,S.perfil,S.logo);
+    const D=window.docx,doc=tipo==='oficio'?docOficio(D,x,S.perfil,S.logo,S.firma):docActa(D,x,S.perfil,S.logo,await anexosActa(x));
     const blob=await D.Packer.toBlob(doc);
     const nombre=tipo==='oficio'?('Oficio_N'+x.numero+'_'+String(x.mat||'').slice(0,40)):('Acta_'+x.tipo+'_'+x.fecha);
     const fn=nombre.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'_')+'.docx';
@@ -1280,12 +1297,14 @@ function clicMic(btn){
 }
 
 /* ============ eventos, nota de voz y calendarios ============ */
-function hojaEvento(e,nuevo,deNota){
-  S.evEd={id:e.id,deNota:!!deNota};
+function hojaEvento(e,nuevo,deNota,adjNuevos){
+  descartarRecibidos();
+  adjNuevos=adjNuevos||[];S.evEd={id:e.id,deNota:!!deNota,adj:(e.adjuntos||[]).concat(adjNuevos),nuevos:adjNuevos.map(a=>a.id),quitados:[]};
   hoja('<h2>'+(nuevo?'Nuevo evento':'Editar evento')+'</h2>'+
     '<label class="f"><span>Título</span><input id="ev-t" value="'+esc(e.titulo)+'" autocomplete="off"></label>'+
     '<div class="grid3"><label class="f"><span>Fecha</span><input id="ev-f" type="date" value="'+esc(e.fecha)+'"></label><label class="f"><span>Hora</span><input id="ev-h" type="time" value="'+esc(e.hora)+'"></label><label class="f"><span>Duración (min)</span><input id="ev-d" type="number" min="5" step="5" value="'+esc(e.dur||60)+'"></label></div>'+
-    '<label class="f"><span>Lugar</span><input id="ev-l" value="'+esc(e.lugar)+'"></label><label class="f"><span>Detalle</span><textarea id="ev-x" style="min-height:70px">'+esc(e.detalle)+'</textarea></label>'+selCal('ev-c',e.cal)+
+    '<label class="f"><span>Lugar</span><input id="ev-l" value="'+esc(e.lugar)+'"></label><label class="f"><span>Detalle</span><textarea id="ev-x" style="min-height:70px">'+esc(e.detalle)+'</textarea></label>'+
+    '<div id="ev-adj">'+htmlAdj(S.evEd.adj,'ev')+'</div>'+selCal('ev-c',e.cal)+
     (e.enCal?'<p class="small muted">Este evento ya se creó en «'+esc(e.enCal)+'». Los cambios que hagas aquí no se actualizan en Google Calendar.</p>':'')+
     '<div class="row"><button class="btn pri" data-a="guardar-evento">Guardar</button>'+(nuevo?'':'<button class="btn" data-a="borrar-evento">'+ic('trash')+'Eliminar</button>')+'<button class="btn" data-a="cerrar-hoja">Cancelar</button></div>');
 }
@@ -1463,7 +1482,7 @@ function crearAvisos(){
 /* ============ sincronización cifrada entre dispositivos ============ */
 /* La dirección de la nube se fija al construir la app o la página; en el prototipo de Claude queda sin configurar.
    En la nube solo hay texto cifrado: la llave sale del correo y la frase secreta, y nunca se envía. */
-const NUBE='https://gestion-directiva-1ce44-default-rtdb.firebaseio.com';
+const NUBE='http://127.0.0.1:8765';
 const OBJ=['perfil','logo','firma','puente'];
 function lsG(k){try{const v=localStorage.getItem('gd_'+k);return v==null?null:JSON.parse(v)}catch(e){return null}}
 function lsS(k,v){try{localStorage.setItem('gd_'+k,JSON.stringify(v))}catch(e){}}
@@ -2024,6 +2043,60 @@ function hojaPlantilla(p,nueva){
     '<label class="f"><span>Distribución (una por línea)</span><textarea id="pl-dist" style="min-height:80px">'+esc(p.distribucion)+'</textarea></label>'+
     '<div class="row"><button class="btn pri" data-a="pl-guardar">Guardar plantilla</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>');
 }
+/* ============ imágenes y documentos adjuntos (recibidos desde WhatsApp u otra aplicación) ============ */
+const MINIS={};
+function adjAqui(a){try{return !!(AND&&AND.existeAdjunto&&AND.existeAdjunto(a.id))}catch(e){return false}}
+function adjMini(a){if(!(a.id in MINIS)){let m='';try{m=AND&&AND.miniatura?AND.miniatura(a.id)||'':''}catch(e){m=''}MINIS[a.id]=m?'data:image/jpeg;base64,'+m:''}return MINIS[a.id]}
+function tamCorto(n){n=Number(n)||0;return n>=1048576?(Math.round(n/104857.6)/10).toString().replace('.',',')+' MB':Math.max(1,Math.round(n/1024))+' KB'}
+function tipoAdj(a){const m=String(a.mime||'');return m.indexOf('image/')===0?'Imagen':m==='application/pdf'?'PDF':/word/.test(m)?'Word':/excel|sheet/.test(m)?'Excel':'Archivo'}
+function adjDesdeAndroid(o){let disp='',nom='';try{disp=Puente.disp()}catch(e){}try{nom=AND&&AND.dispositivo?AND.dispositivo():''}catch(e){}return {id:String(o.id),nombre:String(o.nombre||'archivo'),mime:String(o.mime||''),tam:Number(o.tam)||0,creado:Number(o.creado)||Date.now(),disp:disp,dispNombre:nom||'teléfono'}}
+/* lista de adjuntos: k = plazo | evento | acta | rec (recién recibidos) | ev (en el editor de evento) */
+function htmlAdj(L,k,dueno,compacto){
+  L=L||[];if(!L.length)return '';
+  return '<div class="adjs'+(compacto?' cmp':'')+'">'+L.map(a=>{
+    const aqui=adjAqui(a),mini=aqui?adjMini(a):'';
+    const vis=mini?'<img src="'+mini+'" alt="">':'<span class="adj-ic">'+esc(tipoAdj(a))+'</span>';
+    const cab=aqui?'<button class="adj-v" data-a="adj-abrir" data-id="'+esc(a.id)+'" title="Abrir '+esc(a.nombre)+'">'+vis+'</button>':'<span class="adj-v otro">'+vis+'</span>';
+    return '<div class="adj">'+cab+'<div class="adj-t"><span class="small">'+esc(a.nombre)+'</span><span class="small muted">'+(aqui?tipoAdj(a)+' · '+tamCorto(a.tam):'Guardado en «'+esc(a.dispNombre||'otro teléfono')+'»')+'</span>'+
+      (compacto?'':'<span class="row">'+(aqui?'<button class="btn sm" data-a="adj-abrir" data-id="'+esc(a.id)+'">Abrir</button><button class="btn sm" data-a="adj-compartir" data-id="'+esc(a.id)+'">'+ic('send')+'Enviar</button>':'')+'<button class="btn sm ico" data-a="adj-quitar" data-k="'+k+'" data-o="'+esc(dueno||'')+'" data-id="'+esc(a.id)+'" title="Quitar" aria-label="Quitar '+esc(a.nombre)+'">'+ic('trash')+'</button></span>')+
+      '</div></div>'}).join('')+'</div>';
+}
+function adjsDe(k,dueno){
+  if(k==='rec')return S.recAdj||[];
+  if(k==='ev')return S.evEd?S.evEd.adj:[];
+  const L=k==='plazo'?S.plazos:k==='evento'?S.eventos:k==='acta'?S.actas:[],x=L.find(y=>y.id===dueno);
+  return x?(x.adjuntos=x.adjuntos||[]):null;
+}
+function quitarAdj(k,dueno,id){
+  if(k==='rec'){S.recAdj=(S.recAdj||[]).filter(a=>a.id!==id);try{AND&&AND.borrarAdjunto&&AND.borrarAdjunto(id)}catch(e){}const el=$('#rc-adj');if(el)el.innerHTML=htmlAdj(S.recAdj,'rec');return}
+  if(k==='ev'){if(!S.evEd)return;const nuevo=(S.evEd.nuevos||[]).indexOf(id)>=0;S.evEd.adj=S.evEd.adj.filter(a=>a.id!==id);if(nuevo){S.evEd.nuevos=S.evEd.nuevos.filter(x=>x!==id);try{AND&&AND.borrarAdjunto&&AND.borrarAdjunto(id)}catch(e){}}else (S.evEd.quitados=S.evEd.quitados||[]).push(id);const el=$('#ev-adj');if(el)el.innerHTML=htmlAdj(S.evEd.adj,'ev');return}
+  const L=adjsDe(k,dueno);if(!L)return;const a=L.find(x=>x.id===id);if(!a)return;
+  confirmar('¿Quitar «'+a.nombre+'»?'+(adjAqui(a)?' También se borra de este teléfono.':''),()=>{
+    const i=L.indexOf(a);if(i>=0)L.splice(i,1);try{if(adjAqui(a))AND.borrarAdjunto(id)}catch(e){}
+    Store.guardar(k==='plazo'?'plazos':k==='evento'?'eventos':'actas');render();toast('Archivo quitado.')});
+}
+/* archivos recién recibidos que la persona no guardó en ningún lado: se borran del teléfono */
+function descartarRecibidos(){
+  if(S.recAdj&&S.recAdj.length){S.recAdj.forEach(a=>{try{AND&&AND.borrarAdjunto&&AND.borrarAdjunto(a.id)}catch(e){}})}
+  S.recAdj=null;
+  if(S.evEd&&S.evEd.nuevos&&S.evEd.nuevos.length){S.evEd.nuevos.forEach(id=>{try{AND&&AND.borrarAdjunto&&AND.borrarAdjunto(id)}catch(e){}});S.evEd.nuevos=[]}
+}
+function opcionesDestino(){
+  const g=(t,L)=>L.length?'<optgroup label="'+t+'">'+L.join('')+'</optgroup>':'';
+  const ac=S.actas.slice().sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).slice(0,15).map(a=>'<option value="acta:'+a.id+'">Acta · '+esc(a.tipo)+' · '+fechaCorta(a.fecha)+'</option>');
+  const pl=S.plazos.filter(p=>p.estado!=='cumplido').slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).slice(0,20).map(p=>'<option value="plazo:'+p.id+'">'+esc(String(p.titulo).slice(0,70))+'</option>');
+  const ev=S.eventos.filter(e=>e.fecha>=masDias(hoyISO(),-7)).slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).slice(0,20).map(e=>'<option value="evento:'+e.id+'">'+fechaCorta(e.fecha)+' · '+esc(String(e.titulo).slice(0,60))+'</option>');
+  return g('Actas',ac)+g('Requerimientos pendientes',pl)+g('Eventos y avisos',ev);
+}
+async function anexosActa(a){
+  const o=[];
+  for(const x of (a.adjuntos||[])){
+    let img=null;
+    if(String(x.mime).indexOf('image/')===0&&adjAqui(x)){try{const j=AND.imagenAnexo(x.id);if(j){const d=JSON.parse(j),bin=atob(d.b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);img={data:u,ancho:d.ancho,alto:d.alto}}}catch(e){img=null}}
+    o.push({nombre:x.nombre,tipo:tipoAdj(x),img:img,dispNombre:x.dispNombre});
+  }
+  return o;
+}
 /* ============ WhatsApp: enviar texto a un contacto ============ */
 function soloDigitos(t){return String(t||'').replace(/\D/g,'')}
 function enlaceWA(numero,texto){const n=soloDigitos(numero),t=String(texto||'');return n.length>=8?'https://wa.me/'+n+'?text='+encodeURIComponent(t.length>3000?t.slice(0,3000)+'…':t):''}
@@ -2040,14 +2113,21 @@ function actualizarWA(){
   if(u){a.href=u;a.style.opacity='';a.style.pointerEvents='';a.removeAttribute('aria-disabled')}else{a.removeAttribute('href');a.style.opacity='.5';a.style.pointerEvents='none';a.setAttribute('aria-disabled','true')}
 }
 /* ============ texto recibido desde otra aplicación (WhatsApp, correo, etc.) ============ */
-function recibirCompartido(t,vacio){
-  const x=String(t||'').trim();if(!x&&!vacio)return;S.compartido=x;
-  const ops=a=>a.map(v=>'<option>'+v+'</option>').join('');
-  hoja('<h2>'+(vacio?'Pegar un mensaje':'Recibido desde otra aplicación')+'</h2>'+(vacio&&!x?'<p class="small muted">En WhatsApp mantén presionado el mensaje y toca <b>Copiar</b> (si eliges varios, se copian juntos). Luego mantén presionado el recuadro de abajo y elige <b>Pegar</b>.</p>':'')+'<label class="f"><span>'+(vacio?'Mensaje':'Texto recibido')+'</span><textarea id="rc-t" style="min-height:120px" placeholder="Pega aquí el mensaje">'+esc(x)+'</textarea></label>'+
+function recibirCompartido(t,vacio,adj){
+  const x=String(t||'').trim();adj=(adj||[]).map(adjDesdeAndroid);if(!x&&!vacio&&!adj.length)return;
+  if($('#capa').innerHTML&&S.recAdj&&S.recAdj.length&&adj.length){adj=S.recAdj.concat(adj);S.recAdj=null}else descartarRecibidos();
+  S.compartido=x;S.recAdj=adj;
+  const ops=a=>a.map(v=>'<option>'+v+'</option>').join(''),dst=opcionesDestino(),n=adj.length;
+  hoja('<h2>'+(vacio?'Pegar un mensaje':n?(n===1?'Archivo recibido':n+' archivos recibidos'):'Recibido desde otra aplicación')+'</h2>'+(vacio&&!x?'<p class="small muted">En WhatsApp mantén presionado el mensaje y toca <b>Copiar</b> (si eliges varios, se copian juntos). Luego mantén presionado el recuadro de abajo y elige <b>Pegar</b>.</p>':'')+
+    (n?'<div id="rc-adj">'+htmlAdj(adj,'rec')+'</div><p class="small muted">Se guardan solo en este teléfono, fuera de la galería. En los demás dispositivos se verá que existen, pero no la imagen.</p>':'')+
+    '<label class="f"><span>'+(vacio?'Mensaje':n?'Texto o descripción (opcional)':'Texto recibido')+'</span><textarea id="rc-t" style="min-height:'+(n?'70':'120')+'px" placeholder="'+(n?'Ej.: Circular del DAEM sobre el cierre del año':'Pega aquí el mensaje')+'">'+esc(x)+'</textarea></label>'+
+    (dst?'<div class="card"><label class="f"><span>Agregar a uno que ya existe</span><select id="rc-dest"><option value="">Elegir…</option>'+dst+'</select></label><div class="row"><button class="btn" data-a="rc-agregar">'+ic('plus')+'Agregar</button></div></div><p class="small muted">O crea uno nuevo:</p>':'')+
     '<div class="grid3"><label class="f"><span>Vía</span><select id="rc-v">'+ops(['WhatsApp','Correo','Otro'])+'</select></label><label class="f"><span>Quién lo pide</span><input id="rc-o" autocomplete="off"></label><label class="f"><span>Fecha límite</span><input id="rc-f" type="date" value="'+masDias(hoyISO(),3)+'"></label></div>'+
     '<div class="row"><button class="btn pri" data-a="rc-plazo">Registrar requerimiento</button><button class="btn" data-a="rc-evento">Crear evento</button><button class="btn" data-a="rc-acta">Notas de acta</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>');
 }
-window.__compartido=()=>{if(!AND||!AND.tomarCompartido)return;let t='';try{t=AND.tomarCompartido()}catch(e){}if(t){if(S.cargando){S.compartidoPend=t}else recibirCompartido(t)}};
+window.__compartido=()=>{if(!AND||!AND.tomarCompartido)return;let t='',r={lista:[],fallas:0};try{t=AND.tomarCompartido()||''}catch(e){}try{if(AND.tomarAdjuntos)r=JSON.parse(AND.tomarAdjuntos())||r}catch(e){}
+  const L=Array.isArray(r.lista)?r.lista:[];if(r.fallas)toast(r.fallas===1?'Un archivo no se pudo recibir (máximo 25 MB por archivo).':r.fallas+' archivos no se pudieron recibir (máximo 25 MB por archivo, 20 por vez).');
+  if(!t&&!L.length)return;if(S.cargando){S.compartidoPend={t:t,a:L}}else recibirCompartido(t,false,L)};
 
 /* ============ acciones ============ */
 function abrir(t,id){S.ed={t:t,id:id};const h=t==='oficio'?'#oficios':'#actas';if(location.hash!==h)location.hash=h;else render();window.scrollTo(0,0)}
@@ -2070,11 +2150,21 @@ const ACC={
     if(!Puente.activo()){toast('El puente de correo no está activado en este dispositivo.');return}
     c.respuesta={texto:t,estado:'pendiente',creado:Date.now()};if(c.estado==='nuevo')c.estado='visto';Store.guardar('correos');cerrarHoja();render();Puente.publicar();toast('Respuesta en camino a los borradores de Gmail.')},
   'wa-doc':()=>{const x=actual();if(!x)return;const of=S.ed.t==='oficio';hojaWA(of?textoOficio(x):textoActa(x),of?'Oficio N°'+x.numero+' · '+(x.mat||''):'Acta · '+x.tipo+' · '+fechaCorta(x.fecha))},
-  'rc-plazo':()=>{const t=$('#rc-t').value.trim();if(!t){toast('No hay texto para registrar.');return}const l=t.split('\n')[0].slice(0,140);
-    S.plazos.push({id:nid(),titulo:l,origen:$('#rc-o').value.trim()||'Otro',via:$('#rc-v').value,fecha:$('#rc-f').value,estado:'pendiente',nota:t.length>l.length?t.slice(0,1500):''});Store.guardar('plazos');S.compartido=null;cerrarHoja();S.tab='plazos';S.filtro='pendientes';if(location.hash!=='#agenda')location.hash='#agenda';else render();toast('Requerimiento registrado.')},
+  'rc-plazo':()=>{const t=$('#rc-t').value.trim(),A=S.recAdj||[];if(!t&&!A.length){toast('No hay texto para registrar.');return}const l=t?t.split('\n')[0].slice(0,140):(A.length===1?tipoAdj(A[0])+' recibido: '+A[0].nombre:A.length+' archivos recibidos').slice(0,140);
+    S.plazos.push({id:nid(),titulo:l,origen:$('#rc-o').value.trim()||'Otro',via:$('#rc-v').value,fecha:$('#rc-f').value,estado:'pendiente',nota:t.length>l.length?t.slice(0,1500):'',adjuntos:A});S.recAdj=null;Store.guardar('plazos');S.compartido=null;cerrarHoja();S.tab='plazos';S.filtro='pendientes';if(location.hash!=='#agenda')location.hash='#agenda';else render();toast('Requerimiento registrado.')},
   'pegar-msj':()=>{let t='';if(AND&&AND.pegar){try{t=AND.pegar()||''}catch(e){t=''}}recibirCompartido(t,true);if(!t){const a=$('#rc-t');if(a)a.focus()}},
-  'rc-evento':()=>{const t=$('#rc-t').value.trim();if(!t){toast('No hay texto para registrar.');return}const e=eventoVacio();e.titulo=t.split('\n')[0].slice(0,120);if(t.length>e.titulo.length)e.detalle=t;hojaEvento(e,true)},
-  'rc-acta':()=>{if(!$('#rc-t').value.trim()){toast('No hay texto para registrar.');return}const a=nuevaActaObj();a.notas=$('#rc-t').value.trim();S.actas.push(a);Store.guardar('actas');cerrarHoja();abrir('acta',a.id)},
+  'rc-evento':()=>{const t=$('#rc-t').value.trim(),A=S.recAdj||[];if(!t&&!A.length){toast('No hay texto para registrar.');return}const e=eventoVacio();e.titulo=t?t.split('\n')[0].slice(0,120):'';if(t.length>e.titulo.length)e.detalle=t;S.recAdj=null;hojaEvento(e,true,false,A);if(!t){const i=$('#ev-t');if(i){i.placeholder='Ej.: Aviso: reunión de apoderados';i.focus()}}},
+  'rc-acta':()=>{const t=$('#rc-t').value.trim(),A=S.recAdj||[];if(!t&&!A.length){toast('No hay texto para registrar.');return}const a=nuevaActaObj();a.notas=t;a.adjuntos=A;S.recAdj=null;S.actas.push(a);Store.guardar('actas');cerrarHoja();abrir('acta',a.id)},
+  'rc-agregar':()=>{const v=($('#rc-dest')||{}).value||'';if(!v){toast('Elige dónde agregarlo.');return}const k=v.split(':')[0],id=v.slice(k.length+1),t=$('#rc-t').value.trim(),A=S.recAdj||[];
+    const L=k==='acta'?S.actas:k==='plazo'?S.plazos:S.eventos,x=L.find(y=>y.id===id);if(!x){toast('Ya no existe. Elige otro.');return}
+    x.adjuntos=(x.adjuntos||[]).concat(A);if(t){if(k==='acta')x.notas=(x.notas?x.notas+'\n\n':'')+t;else if(k==='plazo')x.nota=((x.nota?x.nota+'\n':'')+t).slice(0,3000);else x.detalle=(x.detalle?x.detalle+'\n':'')+t}
+    S.recAdj=null;Store.guardar(k==='acta'?'actas':k==='plazo'?'plazos':'eventos');cerrarHoja();
+    if(k==='acta')abrir('acta',id);else if(k==='plazo'){S.tab='plazos';S.filtro='pendientes';if(location.hash!=='#agenda')location.hash='#agenda';else render()}else{S.tab='eventos';if(location.hash!=='#agenda')location.hash='#agenda';else render()}
+    toast(A.length?(A.length===1?'Archivo agregado.':A.length+' archivos agregados.'):'Texto agregado.')},
+  'adj-abrir':b=>{try{AND.abrirAdjunto(b.dataset.id)}catch(e){toast('No se pudo abrir el archivo.')}},
+  'adj-compartir':b=>{try{AND.compartirAdjuntos(JSON.stringify([b.dataset.id]))}catch(e){toast('No se pudo compartir el archivo.')}},
+  'adj-todos':()=>{const a=actual();if(!a)return;const L=(a.adjuntos||[]).filter(adjAqui).map(x=>x.id);if(!L.length){toast('Los archivos de esta acta están en otro teléfono.');return}try{AND.compartirAdjuntos(JSON.stringify(L))}catch(e){toast('No se pudo compartir.')}},
+  'adj-quitar':b=>quitarAdj(b.dataset.k,b.dataset.o,b.dataset.id),
   'sync-vincular':b=>syncVincular(b),
   'sync-confirmar':b=>{const ex=!!b.dataset.existe;cerrarHoja();Sync.activar(ex);render();toast('Dispositivo vinculado.')},
   'sync-ahora':()=>{if(!Sync.activo())return;CLAVES.forEach(k=>{Sync.pend[k]=1});Sync.correr()},
@@ -2128,9 +2218,10 @@ const ACC={
   'editar-evento':b=>{const e=S.eventos.find(x=>x.id===b.dataset.id);if(e)hojaEvento(e,false)},
   'guardar-evento':()=>{const ed=S.evEd;if(!ed)return;const t=$('#ev-t').value.trim(),f=$('#ev-f').value;if(!t||!f){toast('Indica al menos el título y la fecha.');return}
     const c=$('#ev-c'),datos={titulo:t,fecha:f,hora:$('#ev-h').value,dur:Number($('#ev-d').value)||60,lugar:$('#ev-l').value.trim(),detalle:$('#ev-x').value.trim(),cal:c?c.value:''};
+    datos.adjuntos=ed.adj||[];(ed.quitados||[]).forEach(id=>{try{AND&&AND.borrarAdjunto&&AND.borrarAdjunto(id)}catch(x){}});ed.nuevos=[];
     const e=S.eventos.find(x=>x.id===ed.id),estaba=!!(e&&e.enCal);if(e){Object.assign(e,datos);e.ejemplo=false}else S.eventos.push(Object.assign({id:ed.id,enCal:''},datos));
     if(ed.deNota)S.nota='';Store.guardar('eventos');S.evEd=null;cerrarHoja();render();toast(estaba?'Evento guardado. En Google Calendar debes corregirlo aparte.':'Evento guardado.')},
-  'borrar-evento':()=>{const ed=S.evEd;if(!ed)return;confirmar('¿Eliminar este evento? Si ya está en Google Calendar, bórralo allí también.',()=>{S.eventos=S.eventos.filter(x=>x.id!==ed.id);S.evEd=null;Store.guardar('eventos');render()})},
+  'borrar-evento':()=>{const ed=S.evEd;if(!ed)return;confirmar('¿Eliminar este evento? Si ya está en Google Calendar, bórralo allí también.',()=>{(ed.adj||[]).forEach(a=>{try{if(adjAqui(a))AND.borrarAdjunto(a.id)}catch(x){}});S.eventos=S.eventos.filter(x=>x.id!==ed.id);S.evEd=null;Store.guardar('eventos');render()})},
   'acta-de-evento':b=>{const e=S.eventos.find(x=>x.id===b.dataset.id);if(!e)return;const a=nuevaActaObj(),m=(S.perfil.tiposActa||[]).find(x=>e.titulo.toLowerCase().indexOf(x.toLowerCase())>=0);if(m)a.tipo=m;a.fecha=e.fecha;a.inicio=e.hora||'';if(e.detalle)a.notas=e.detalle;S.actas.push(a);Store.guardar('actas');abrir('acta',a.id)},
   'nv-ia':b=>iaNota(b),
   'nv-evento':()=>{const t=String(S.nota||'').trim(),e=eventoVacio();e.titulo=t.split('\n')[0].slice(0,120);if(t.length>e.titulo.length)e.detalle=t;hojaEvento(e,true,true)},
@@ -2173,12 +2264,12 @@ const ACC={
     else{const a=S.actas.find(x=>x.id===id);if(a&&a.acuerdos[Number(b.dataset.i)]){a.acuerdos[Number(b.dataset.i)].hecho=true;Store.guardar('actas')}}
     render();toast('Marcado como '+(k==='oficio'?'respondido':'cumplido')+'.')},
   'reabrir':b=>{const p=S.plazos.find(x=>x.id===b.dataset.id);if(p){p.estado='pendiente';Store.guardar('plazos');render()}},
-  'borrar-plazo':b=>confirmar('¿Eliminar este requerimiento?',()=>{S.plazos=S.plazos.filter(x=>x.id!==b.dataset.id);Store.guardar('plazos');render()}),
+  'borrar-plazo':b=>confirmar('¿Eliminar este requerimiento?',()=>{const p=S.plazos.find(x=>x.id===b.dataset.id);((p&&p.adjuntos)||[]).forEach(a=>{try{if(adjAqui(a))AND.borrarAdjunto(a.id)}catch(x){}});S.plazos=S.plazos.filter(x=>x.id!==b.dataset.id);Store.guardar('plazos');render()}),
   'responder-plazo':b=>{const p=S.plazos.find(x=>x.id===b.dataset.id);if(!p)return;const o=nuevoOficioObj('ordinario');o.ant='Requerimiento de '+p.origen+(p.via?' vía '+p.via.toLowerCase():'');o.mat='Responde: '+p.titulo;crearOficio(o)},
   'reiterar':b=>{const x=S.oficios.find(q=>q.id===b.dataset.id);if(!x)return;const o=nuevoOficioObj('ordinario');o.ant='N° '+x.numero;o.mat='Reitera: '+x.mat;o.aNombre=x.aNombre;o.aCargo=x.aCargo;
     o.cuerpo='Junto con saludar cordialmente, y en relación con el Oficio Ordinario N°'+x.numero+' de fecha '+fechaLarga(x.fecha)+', cuya materia es «'+x.mat+'», me permito reiterar lo allí solicitado, toda vez que a la fecha no se ha recibido respuesta.\n\n[Indicar los efectos que la falta de respuesta genera en el establecimiento]\n\nEn virtud de lo anterior, solicito a usted dar respuesta a la brevedad.';crearOficio(o)},
   'borrar-oficio':b=>confirmar('¿Eliminar este oficio? Su número quedará disponible.',()=>{S.oficios=S.oficios.filter(x=>x.id!==b.dataset.id);S.ed=null;Store.guardar('oficios');render()}),
-  'borrar-acta':b=>confirmar('¿Eliminar esta acta y sus acuerdos?',()=>{S.actas=S.actas.filter(x=>x.id!==b.dataset.id);S.ed=null;Store.guardar('actas');render()}),
+  'borrar-acta':b=>confirmar('¿Eliminar esta acta y sus acuerdos?',()=>{const q=S.actas.find(x=>x.id===b.dataset.id);((q&&q.adjuntos)||[]).forEach(a=>{try{if(adjAqui(a))AND.borrarAdjunto(a.id)}catch(x){}});S.actas=S.actas.filter(x=>x.id!==b.dataset.id);S.ed=null;Store.guardar('actas');render()}),
   'copiar-oficio':()=>{const o=actual();if(o)copiar(textoOficio(o))},
   'copiar-acta':()=>{const a=actual();if(a)copiar(textoActa(a))},
   'word-oficio':()=>descargarWord('oficio'),'word-acta':()=>descargarWord('acta'),
@@ -2300,7 +2391,7 @@ async function arrancar(){
   Sync.iniciar();Puente.preparar();
   {const lim=Date.now()-14*864e5,n0=S.registros.length;S.registros=S.registros.filter(r=>!((r.estado==='anotado'||r.estado==='borrador')&&r.creado<lim));if(S.registros.length!==n0)Store.guardar('registros')}
   S.cargando=false;aplicarTema();pintarEstado();render();
-  if(S.compartidoPend){const t=S.compartidoPend;S.compartidoPend=null;recibirCompartido(t)}else window.__compartido();
+  if(S.compartidoPend){const c=S.compartidoPend;S.compartidoPend=null;recibirCompartido(c.t,false,c.a)}else window.__compartido();
   if(document.querySelector('link[rel="manifest"]')&&'serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 }
 arrancar();
