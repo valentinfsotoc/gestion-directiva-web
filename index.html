@@ -909,7 +909,7 @@ function vHoy(){
   const atr=P.filter(x=>x.fecha&&diasHasta(x.fecha)<0).length,hoy=L.filter(x=>x.fecha===h).length,sem=L.filter(x=>x.fecha&&diasHasta(x.fecha)>0&&diasHasta(x.fecha)<=7).length,sinr=S.oficios.filter(o=>o.estado==='enviado').length;
   const cu=S.cumples.map(c=>({c:c,f:proxCumple(c)})).filter(x=>x.f&&diasHasta(x.f)<=7).sort((a,b)=>a.f.localeCompare(b.f));
   return '<div class="row between"><div><h1>'+DIAS[d.getDay()].replace(/^./,c=>c.toUpperCase())+' '+d.getDate()+' de '+MESES[d.getMonth()]+'</h1><p class="muted small">Lo que requiere tu atención, en un solo lugar.</p></div>'+
-    '<div class="row"><button class="btn pri" data-a="nuevo-evento">'+ic('plus')+'Evento</button><button class="btn pri" data-a="nuevo-oficio" data-tipo="ordinario">'+ic('plus')+'Oficio</button><button class="btn pri" data-a="nueva-acta">'+ic('plus')+'Acta</button></div></div>'+
+    '<div class="row"><button class="btn pri" data-a="nuevo-evento">'+ic('plus')+'Evento</button><button class="btn pri" data-a="nuevo-oficio" data-tipo="ordinario">'+ic('plus')+'Oficio</button><button class="btn pri" data-a="nueva-acta">'+ic('plus')+'Acta</button><button class="btn" data-a="pegar-msj">'+ic('copy')+'Pegar mensaje</button></div></div>'+
     (hayEjemplos()?'<div class="aviso info row between"><span>Los registros marcados como <b>Ejemplo</b> muestran cómo funciona la aplicación.</span><button class="btn sm" data-a="borrar-ejemplos">Borrar ejemplos</button></div>':'')+
     (S.perfil.nombre===PERFIL_BASE.nombre?'<div class="aviso">Configura tu escuela en <a href="#perfil">Perfil</a>: nombre, colores, insignia y firma. Si tienes un respaldo, impórtalo ahí.</div>':'')+
     '<div class="tiles"><div class="tile '+(atr?'crit':'ok')+'"><b>'+atr+'</b><span>Atrasados</span></div><div class="tile '+(hoy?'warn':'')+'"><b>'+hoy+'</b><span>Para hoy</span></div><div class="tile br"><b>'+sem+'</b><span>Próximos 7 días</span></div><div class="tile '+(sinr?'warn':'')+'"><b>'+sinr+'</b><span>Oficios sin respuesta</span></div></div>'+
@@ -2040,10 +2040,10 @@ function actualizarWA(){
   if(u){a.href=u;a.style.opacity='';a.style.pointerEvents='';a.removeAttribute('aria-disabled')}else{a.removeAttribute('href');a.style.opacity='.5';a.style.pointerEvents='none';a.setAttribute('aria-disabled','true')}
 }
 /* ============ texto recibido desde otra aplicación (WhatsApp, correo, etc.) ============ */
-function recibirCompartido(t){
-  const x=String(t||'').trim();if(!x)return;S.compartido=x;
+function recibirCompartido(t,vacio){
+  const x=String(t||'').trim();if(!x&&!vacio)return;S.compartido=x;
   const ops=a=>a.map(v=>'<option>'+v+'</option>').join('');
-  hoja('<h2>Recibido desde otra aplicación</h2><label class="f"><span>Texto recibido</span><textarea id="rc-t" style="min-height:120px">'+esc(x)+'</textarea></label>'+
+  hoja('<h2>'+(vacio?'Pegar un mensaje':'Recibido desde otra aplicación')+'</h2>'+(vacio&&!x?'<p class="small muted">En WhatsApp mantén presionado el mensaje y toca <b>Copiar</b> (si eliges varios, se copian juntos). Luego mantén presionado el recuadro de abajo y elige <b>Pegar</b>.</p>':'')+'<label class="f"><span>'+(vacio?'Mensaje':'Texto recibido')+'</span><textarea id="rc-t" style="min-height:120px" placeholder="Pega aquí el mensaje">'+esc(x)+'</textarea></label>'+
     '<div class="grid3"><label class="f"><span>Vía</span><select id="rc-v">'+ops(['WhatsApp','Correo','Otro'])+'</select></label><label class="f"><span>Quién lo pide</span><input id="rc-o" autocomplete="off"></label><label class="f"><span>Fecha límite</span><input id="rc-f" type="date" value="'+masDias(hoyISO(),3)+'"></label></div>'+
     '<div class="row"><button class="btn pri" data-a="rc-plazo">Registrar requerimiento</button><button class="btn" data-a="rc-evento">Crear evento</button><button class="btn" data-a="rc-acta">Notas de acta</button><button class="btn" data-a="cerrar-hoja">Cancelar</button></div>');
 }
@@ -2072,8 +2072,9 @@ const ACC={
   'wa-doc':()=>{const x=actual();if(!x)return;const of=S.ed.t==='oficio';hojaWA(of?textoOficio(x):textoActa(x),of?'Oficio N°'+x.numero+' · '+(x.mat||''):'Acta · '+x.tipo+' · '+fechaCorta(x.fecha))},
   'rc-plazo':()=>{const t=$('#rc-t').value.trim();if(!t){toast('No hay texto para registrar.');return}const l=t.split('\n')[0].slice(0,140);
     S.plazos.push({id:nid(),titulo:l,origen:$('#rc-o').value.trim()||'Otro',via:$('#rc-v').value,fecha:$('#rc-f').value,estado:'pendiente',nota:t.length>l.length?t.slice(0,1500):''});Store.guardar('plazos');S.compartido=null;cerrarHoja();S.tab='plazos';S.filtro='pendientes';if(location.hash!=='#agenda')location.hash='#agenda';else render();toast('Requerimiento registrado.')},
-  'rc-evento':()=>{const t=$('#rc-t').value.trim(),e=eventoVacio();e.titulo=t.split('\n')[0].slice(0,120);if(t.length>e.titulo.length)e.detalle=t;hojaEvento(e,true)},
-  'rc-acta':()=>{const a=nuevaActaObj();a.notas=$('#rc-t').value.trim();S.actas.push(a);Store.guardar('actas');cerrarHoja();abrir('acta',a.id)},
+  'pegar-msj':()=>{let t='';if(AND&&AND.pegar){try{t=AND.pegar()||''}catch(e){t=''}}recibirCompartido(t,true);if(!t){const a=$('#rc-t');if(a)a.focus()}},
+  'rc-evento':()=>{const t=$('#rc-t').value.trim();if(!t){toast('No hay texto para registrar.');return}const e=eventoVacio();e.titulo=t.split('\n')[0].slice(0,120);if(t.length>e.titulo.length)e.detalle=t;hojaEvento(e,true)},
+  'rc-acta':()=>{if(!$('#rc-t').value.trim()){toast('No hay texto para registrar.');return}const a=nuevaActaObj();a.notas=$('#rc-t').value.trim();S.actas.push(a);Store.guardar('actas');cerrarHoja();abrir('acta',a.id)},
   'sync-vincular':b=>syncVincular(b),
   'sync-confirmar':b=>{const ex=!!b.dataset.existe;cerrarHoja();Sync.activar(ex);render();toast('Dispositivo vinculado.')},
   'sync-ahora':()=>{if(!Sync.activo())return;CLAVES.forEach(k=>{Sync.pend[k]=1});Sync.correr()},
