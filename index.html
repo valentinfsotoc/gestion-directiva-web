@@ -1734,7 +1734,7 @@ const Puente={
     if(n||e){Store.guardar('correos');Sync.refrescar();this.publicar()}
     if(n)toast(n===1?'El borrador de respuesta ya está en Gmail.':'Los borradores de respuesta ya están en Gmail.');
     else if(e)toast('No se pudo crear el borrador: la conversación ya no está en Gmail.');
-    if(d&&d.cuenta){const av=lsG('pavisos')||{};av[String(d.cuenta)]=d.libros||null;lsS('pavisos',av)}
+    if(d&&d.cuenta){const av=lsG('pavisos')||{};av[String(d.cuenta)]=d.libros||null;lsS('pavisos',av);const pv=lsG('pver')||{};pv[String(d.cuenta)]=('libros' in d)?2:1;lsS('pver',pv)}
     let an=0,bo=0,fa=0;
     S.registros.forEach(r=>{if(r.estado!=='pendiente')return;const k=r.id+'|'+r.creado;if(hechas[k]){if(r.clase==='correo'){r.estado='borrador';bo++}else{r.estado='anotado';an++}}else if(err[k]){r.estado='error';fa++}});
     if(an||bo||fa){cacheP=null;Store.guardar('registros');Sync.refrescar();this.publicar()}
@@ -1754,13 +1754,16 @@ const Puente={
     if(reg.length)o.registros=reg;if(env.length)o.envios=env;
     if(L.personal||L.reporte||L.m)o.libros={personal:L.personal||'',reporte:L.reporte||'',m:L.m||0};
     const j=JSON.stringify(o),vacio=!o.respuestas.length&&!reg.length&&!env.length&&!o.libros;
-    if(j===this.revs.salida||(vacio&&this.revs.salida===undefined))return;
+    if(vacio&&this.revs.salida===undefined)return;
+    if(this.revs.leg&&j===this.revs.salida)return;   /* «leg»: una vez actualizada la app, reenvía lo pendiente también por el canal común */
     try{
       /* cada dispositivo escribe su propio canal: así ninguno pisa lo que otro dejó pendiente */
-      const rev=Date.now().toString(36),canal='salida_'+this.disp();
+      const rev=Date.now().toString(36),canal='salida_'+this.disp(),ix={[canal]:rev};
       await Sync.pedir(this.url(canal),'PUT',{c:cifrarCon(this.llave,o),r:rev});
-      await Sync.pedir(this.url('idx'),'PATCH',{[canal]:rev});
-      this.revs.salida=j;lsS('prevs',this.revs);
+      /* el programa de Google anterior a la versión 1.6 solo lee el canal común «salida»: se mantiene para sus respuestas */
+      if(o.respuestas.length){await Sync.pedir(this.url('salida'),'PUT',{c:cifrarCon(this.llave,{respuestas:o.respuestas}),r:rev});ix.salida=rev}
+      await Sync.pedir(this.url('idx'),'PATCH',ix);
+      this.revs.salida=j;this.revs.leg=1;lsS('prevs',this.revs);
     }catch(e){clearTimeout(this.tp);this.tp=setTimeout(()=>this.publicar(),20000)}
   }
 };
@@ -1786,8 +1789,9 @@ function htmlCorreosAgenda(){
 function htmlPuente(){
   if(!Sync.disponible())return '';
   if(!Puente.activo())return '<div class="card"><h2>Correo</h2><p class="small muted">Haz que las solicitudes que llegan a tu Gmail aparezcan en la aplicación. Se instala una sola vez un pequeño programa en tu cuenta de Google: revisa los correos que tengan la etiqueta «Gestión Directiva» y los envía cifrados. Las respuestas que escribas aquí quedan como borradores en Gmail.</p><div class="row"><button class="btn pri" data-a="puente-activar">Activar el puente de correo</button></div></div>';
-  const L=Puente.cuentas();
+  const L=Puente.cuentas(),pv=lsG('pver')||{},viejas=L.filter(x=>pv[x.cuenta]===1).map(x=>x.cuenta);
   return '<div class="card"><h2>Correo</h2><p class="small muted">'+(L.length?'Cuentas de correo conectadas: '+L.map(x=>esc(x.cuenta)+' (última revisión '+fechaHoraCorta(new Date(x.t).toISOString())+')').join('; ')+'.':'Puente activado en la aplicación. Falta instalar el programa en tu cuenta de Google y pegarle este código.')+'</p>'+
+    (viejas.length?'<div class="aviso">'+(viejas.length===1?'La cuenta ':'Las cuentas ')+viejas.map(esc).join(' y ')+' '+(viejas.length===1?'tiene':'tienen')+' el programa antiguo. Las respuestas siguen funcionando, pero para las planillas de Drive y los correos con adjunto reemplázalo por el PuenteCorreo nuevo y ejecuta «instalar».</div>':'')+
     '<p class="small muted">Para sumar otra cuenta de correo, instala el mismo programa en esa cuenta de Google, con este mismo código.</p>'+
     '<label class="f"><span>Código del puente</span><input id="pu-cod" readonly value="'+esc(Puente.codigo())+'" style="font-family:ui-monospace,Consolas,monospace;font-size:.85rem"></label>'+
     '<p class="small muted">El código da acceso solo a los correos del puente, no al resto de tus datos. No lo compartas.</p>'+
