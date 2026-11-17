@@ -1565,8 +1565,8 @@ const Sync={
   cifrar(o){return cifrarCon(this.llave,o)},
   descifrar(t){return descifrarCon(this.llave,t)},
   async pedir(url,metodo,cuerpo){
-    let r;try{r=await fetch(url,{method:metodo||'GET',body:cuerpo==null?undefined:JSON.stringify(cuerpo),cache:'no-store'})}catch(e){throw {code:'red'}}
-    if(!r.ok)throw {code:(r.status===401||r.status===403)?'permiso':'red',status:r.status};
+    let r;try{r=await fetch(url,{method:metodo||'GET',body:cuerpo==null?undefined:JSON.stringify(cuerpo),cache:'no-store'})}catch(e){throw {code:'red',det:'la nube no respondió ('+String((e&&e.message)||e).slice(0,80)+')'}}
+    if(!r.ok){let t='';try{t=(await r.text()).slice(0,120)}catch(e){}throw {code:(r.status===401||r.status===403)?'permiso':'red',status:r.status,det:'la nube respondió '+r.status+(t?': '+t:'')}}
     return r.json();
   },
   /* trae la versión de la nube, la une con la local y sube el resultado si la nube quedó atrás */
@@ -1588,13 +1588,14 @@ const Sync={
     if(!this.activo()||this.corriendo)return;this.corriendo=true;this.poner('sinc');let fallo=null;
     try{
       for(;;){const k=CLAVES.find(x=>this.pend[x]);if(!k||!this.activo())break;delete this.pend[k];
-        try{await this.sinc(k)}catch(e){this.pend[k]=1;throw e}
+        try{await this.sinc(k)}catch(e){this.pend[k]=1;if(!e||!e.code)e={code:'fallo',det:String((e&&e.message)||e).slice(0,160)};e.clave=k;throw e}
         lsS('pend',this.pend)}
     }catch(e){fallo=e||{code:'red'}}
     this.corriendo=false;if(!this.activo())return;
-    if(fallo){lsS('pend',this.pend);const c=fallo.code==='llave'?'llave':fallo.code==='permiso'?'permiso':'red';this.poner(c);
-      if(c==='red'){clearTimeout(this.tr);this.tr=setTimeout(()=>this.correr(),20000)}}
-    else{this.ult=Date.now();this.poner('ok')}
+    if(fallo){lsS('pend',this.pend);const c=fallo.code==='llave'?'llave':fallo.code==='permiso'?'permiso':fallo.code==='fallo'?'fallo':'red';
+      this.det=(fallo.det||'')+(fallo.clave?' · al sincronizar «'+fallo.clave+'»':'');try{console.warn('Sincronización:',c,this.det,fallo)}catch(e){}this.poner(c);
+      if(c==='red'||c==='fallo'){clearTimeout(this.tr);this.tr=setTimeout(()=>this.correr(),c==='red'?20000:60000)}}
+    else{this.ult=Date.now();this.det='';this.poner('ok')}
   },
   verIdx(idx){
     if(!this.activo())return;let hay=false;
@@ -1630,12 +1631,14 @@ const Sync={
   },
   desvincular(){this.cerrar();this.cfg=null;this.llave=null;this.pend={};this.idx={};try{localStorage.removeItem('gd_sync');localStorage.removeItem('gd_pend')}catch(e){}this.poner('')},
   poner(e){this.estado=e;pintarEstado();const el=$('#sync-estado');if(el)el.textContent=this.texto()},
-  chip(){return {sinc:'Sincronizando…',ok:'Sincronizado',red:'Sin conexión · guardado aquí',llave:'No se pudo descifrar',permiso:'La nube rechazó el acceso'}[this.estado]||'Sincronización activa'},
+  chip(){return {sinc:'Sincronizando…',ok:'Sincronizado',red:'Sin conexión · guardado aquí',fallo:'Error al sincronizar · guardado aquí',llave:'No se pudo descifrar',permiso:'La nube rechazó el acceso'}[this.estado]||'Sincronización activa'},
   texto(){
     const e=this.estado;
-    return e==='sinc'?'Sincronizando…':e==='red'?'Sin conexión con la nube. Los cambios quedan guardados aquí y se envían cuando vuelva la conexión.':
+    const d=this.det?' Detalle: '+this.det+'.':'';
+    return e==='sinc'?'Sincronizando…':e==='red'?'Sin conexión con la nube. Los cambios quedan guardados aquí y se envían cuando vuelva la conexión.'+d:
+      e==='fallo'?'La aplicación tuvo un error al sincronizar. Los cambios quedan guardados aquí; se reintenta cada minuto.'+d:
       e==='llave'?'Los datos de la nube no se pudieron descifrar con esta frase. Desvincula y vuelve a vincular con la frase correcta.':
-      e==='permiso'?'La nube rechazó el acceso. Avisa a quien administra la aplicación.':
+      e==='permiso'?'La nube rechazó el acceso. Avisa a quien administra la aplicación.'+d:
       this.ult?'Al día. Última sincronización: '+new Date(this.ult).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})+'.':'Vinculado. Esperando la primera sincronización.';
   }
 };
