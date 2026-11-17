@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prueba de conexión · Gestión Directiva</title>
+<style>
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#1b201a;background:#f3f4f0;line-height:1.45}
+  h1{font-size:1.4rem;margin:0 0 6px}
+  p{margin:6px 0}
+  button{font:inherit;font-weight:600;padding:10px 16px;border-radius:8px;border:1px solid #2f5d7c;background:#2f5d7c;color:#fff;cursor:pointer;margin:10px 8px 10px 0}
+  button.sec{background:#fff;color:#2f5d7c}
+  ol{padding-left:20px}
+  li{margin:8px 0;background:#fff;border:1px solid #d5d9cf;border-radius:8px;padding:8px 10px;list-style-position:inside}
+  .ok{color:#256b2e;font-weight:700}.mal{color:#a12a1f;font-weight:700}.esp{color:#6b6b6b}
+  code{font-size:.85rem;overflow-wrap:anywhere}
+  #res{font-weight:600;margin-top:12px}
+</style>
+</head>
+<body>
+<h1>Prueba de conexión con la nube</h1>
+<p>Comprueba si este equipo puede sincronizar Gestión Directiva. Usa una carpeta de prueba vacía: no lee ni toca tus datos, y al terminar la borra.</p>
+<button id="ir">Iniciar prueba</button><button id="cp" class="sec" hidden>Copiar resultado</button>
+<ol id="L"></ol>
+<p id="res"></p>
+<script>
+"use strict";
+const NUBE = "https://gestion-directiva-1ce44-default-rtdb.firebaseio.com";
+const hex = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, '0')).join('');
+const L = document.getElementById('L');
+let log = [];
+function paso(t) {
+  const li = document.createElement('li'); li.innerHTML = '<span class="esp">…</span> ' + t; L.appendChild(li);
+  return (ok, det) => { li.innerHTML = '<span class="' + (ok ? 'ok">✓' : 'mal">✗') + '</span> ' + t + (det ? '<br><code>' + String(det).replace(/</g, '&lt;') + '</code>' : ''); log.push((ok ? 'OK ' : 'FALLA ') + t + (det ? ' — ' + det : '')); return ok; };
+}
+async function pedir(url, metodo, cuerpo) {
+  const t0 = performance.now();
+  let r;
+  try { r = await fetch(url, { method: metodo || 'GET', body: cuerpo == null ? undefined : JSON.stringify(cuerpo), cache: 'no-store' }); }
+  catch (e) { throw new Error('sin respuesta: ' + ((e && e.message) || e) + ' (' + Math.round(performance.now() - t0) + ' ms)'); }
+  const txt = await r.text();
+  if (!r.ok) throw new Error('respuesta ' + r.status + ': ' + txt.slice(0, 160));
+  return Math.round(performance.now() - t0) + ' ms';
+}
+async function correr() {
+  document.getElementById('ir').disabled = true; L.innerHTML = ''; log = ['Equipo: ' + navigator.userAgent, 'En línea según el equipo: ' + navigator.onLine];
+  const base = NUBE + '/u/' + hex(32);
+  let fallas = 0;
+  const t = async (txt, f) => { const fin = paso(txt); try { const d = await f(); fin(true, d); } catch (e) { fallas++; fin(false, (e && e.message) || e); } };
+  await t('Leer de la nube', () => pedir(base + '/idx.json'));
+  await t('Guardar un dato pequeño', () => pedir(base + '/d/prueba.json', 'PUT', { c: 'x', r: '1' }));
+  await t('Actualizar el índice', () => pedir(base + '/idx.json', 'PATCH', { prueba: '1' }));
+  await t('Guardar un dato grande (300 KB)', () => pedir(base + '/d/grande.json', 'PUT', { c: 'x'.repeat(300000), r: '2' }));
+  await t('Recibir avisos de cambios (conexión abierta)', () => new Promise((ok, mal) => {
+    let es; const t0 = performance.now();
+    try { es = new EventSource(base + '/idx.json'); } catch (e) { mal(e); return; }
+    const fin = setTimeout(() => { es.close(); mal(new Error('no llegó ningún aviso en 10 segundos')); }, 10000);
+    es.addEventListener('put', () => { clearTimeout(fin); es.close(); ok(Math.round(performance.now() - t0) + ' ms'); });
+    es.onerror = () => { if (es.readyState === 2) { clearTimeout(fin); mal(new Error('la conexión se cerró con error')); } };
+  }));
+  await t('Borrar la carpeta de prueba', () => pedir(base + '.json', 'DELETE'));
+  const res = document.getElementById('res');
+  res.textContent = fallas ? 'Hubo ' + fallas + (fallas === 1 ? ' falla' : ' fallas') + '. Copia el resultado y envíalo.' : 'Todo bien: este equipo puede sincronizar.';
+  res.className = fallas ? 'mal' : 'ok';
+  log.push(res.textContent);
+  document.getElementById('cp').hidden = false; document.getElementById('ir').disabled = false;
+}
+document.getElementById('ir').onclick = correr;
+document.getElementById('cp').onclick = () => {
+  const t = log.join('\n');
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => alert('Resultado copiado.'), () => prompt('Copia este texto:', t));
+};
+</script>
+</body>
+</html>
