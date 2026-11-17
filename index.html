@@ -1704,13 +1704,17 @@ const Puente={
       else if(/^libro_(personal|reporte)$/.test(k)){if(idx[k]!==this.revs[k]||!S.libros[k.slice(6)])this.bajar(k,idx[k])}});
   },
   async bajar(q,rev){
-    if(this['b_'+q])return;this['b_'+q]=true;
+    (this.quiere=this.quiere||{})[q]=rev;   /* la última versión anunciada: si llega otra mientras se descarga, se vuelve a pedir */
+    if(this['b_'+q])return;this['b_'+q]=true;let fallo=false;
     try{
       const j=await Sync.pedir(this.url(q));
       if(j&&j.c){const d=descifrarCon(this.llave,j.c);if(q.indexOf('entrada')===0)this.recibir(d);else if(q.indexOf('libro_')===0)this.libro(q.slice(6),d);else this.acusar(d)}
       this.revs[q]=rev;lsS('prevs',this.revs);
-    }catch(e){}
+    }catch(e){fallo=true}
     this['b_'+q]=false;
+    const otra=this.quiere[q];
+    if(fallo)setTimeout(()=>{if(this.sec&&this.quiere[q]!==this.revs[q])this.bajar(q,this.quiere[q])},15000);
+    else if(otra&&otra!==this.revs[q])this.bajar(q,otra);
   },
   /* planilla de Drive leída por el programa de Google */
   libro(rol,d){if(!d||!Array.isArray(d.hojas))return;S.libros[rol]=d;lsS('libro_'+rol,d);cacheP=cacheR=null;Sync.refrescar()},
