@@ -1571,6 +1571,9 @@ const Sync={
   },
   /* trae la versión de la nube, la une con la local y sube el resultado si la nube quedó atrás */
   async sinc(k){
+    /* antes de unir con la nube, marca la hora de los cambios locales que aún esperan guardarse;
+       si no, un cambio hecho en el último instante podría perder frente a la versión de otro dispositivo */
+    if(Store.t&&Store.t[k]){clearTimeout(Store.t[k]);Store.t[k]=null;Store.escribir(k)}else this.alGuardar(k);
     const j=await this.pedir(this.url('d/'+k));
     const rem=(j&&j.c)?this.descifrar(j.c):null;
     const loc=this.local(k),fus=rem?this.fusion(k,loc,rem):loc;
