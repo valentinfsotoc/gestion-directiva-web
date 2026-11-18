@@ -1565,7 +1565,11 @@ const Sync={
   cifrar(o){return cifrarCon(this.llave,o)},
   descifrar(t){return descifrarCon(this.llave,t)},
   async pedir(url,metodo,cuerpo){
-    let r;try{r=await fetch(url,{method:metodo||'GET',body:cuerpo==null?undefined:JSON.stringify(cuerpo),cache:'no-store'})}catch(e){throw {code:'red',det:'la nube no respondió ('+String((e&&e.message)||e).slice(0,80)+')'}}
+    /* cada pedido tiene un tiempo máximo: así una conexión colgada no deja pedidos esperando para siempre */
+    const ac=typeof AbortController==='function'?new AbortController():null,lim=(metodo==='PUT'?60:25)*1000,tm=ac?setTimeout(()=>ac.abort(),lim):0;
+    let r;try{r=await fetch(url,{method:metodo||'GET',body:cuerpo==null?undefined:JSON.stringify(cuerpo),cache:'no-store',signal:ac?ac.signal:undefined})}
+    catch(e){clearTimeout(tm);throw {code:'red',det:(e&&e.name==='AbortError')?'la nube tardó más de '+(lim/1000)+' s en responder':'la nube no respondió ('+String((e&&e.message)||e).slice(0,80)+')'}}
+    clearTimeout(tm);
     if(!r.ok){let t='';try{t=(await r.text()).slice(0,120)}catch(e){}throw {code:(r.status===401||r.status===403)?'permiso':'red',status:r.status,det:'la nube respondió '+r.status+(t?': '+t:'')}}
     return r.json();
   },
@@ -1597,8 +1601,9 @@ const Sync={
     this.corriendo=false;if(!this.activo())return;
     if(fallo){lsS('pend',this.pend);const c=fallo.code==='llave'?'llave':fallo.code==='permiso'?'permiso':fallo.code==='fallo'?'fallo':'red';
       this.det=(fallo.det||'')+(fallo.clave?' · al sincronizar «'+fallo.clave+'»':'');try{console.warn('Sincronización:',c,this.det,fallo)}catch(e){}this.poner(c);
-      if(c==='red'||c==='fallo'){clearTimeout(this.tr);this.tr=setTimeout(()=>this.correr(),c==='red'?20000:60000)}}
-    else{this.ult=Date.now();this.det='';this.poner('ok')}
+      if(c==='red'){this.fallas=(this.fallas||0)+1}
+      if(c==='red'||c==='fallo'){clearTimeout(this.tr);this.tr=setTimeout(()=>{if((this.fallas||0)>=3){this.fallas=0;this.conectar()}else this.correr()},c==='red'?20000:60000)}}
+    else{this.ult=Date.now();this.det='';this.fallas=0;this.poner('ok')}
   },
   verIdx(idx){
     if(!this.activo())return;let hay=false;
@@ -1609,16 +1614,21 @@ const Sync={
   conectar(){
     this.cerrar();
     try{
-      const es=new EventSource(this.url('idx'));this.es=es;
-      const h=ev=>{try{const d=JSON.parse(ev.data);if(!d||this.es!==es)return;
+      const es=new EventSource(this.url('idx'));this.es=es;this.vivo=Date.now();
+      /* la nube manda una señal cada ~30 s; si deja de llegar, la conexión quedó muerta (suspensión, cambio de red) y se abre otra */
+      const latido=()=>{if(this.es===es)this.vivo=Date.now()};
+      es.addEventListener('keep-alive',latido);es.addEventListener('open',latido);
+      es.onerror=()=>{if(this.es===es&&es.readyState===2){clearTimeout(this.trc);this.trc=setTimeout(()=>{if(this.es===es)this.conectar()},10000)}};
+      const h=ev=>{latido();try{const d=JSON.parse(ev.data);if(!d||this.es!==es)return;
         if(d.path==='/'){if(ev.type==='put')this.idx=d.data||{};else Object.assign(this.idx,d.data||{})}else this.idx[String(d.path).replace(/^\//,'')]=d.data;
         this.verIdx(this.idx)}catch(e){}};
       es.addEventListener('put',h);es.addEventListener('patch',h);
     }catch(e){}
     this.ti=setInterval(()=>{if(!document.hidden)this.revisar()},90000);
+    this.tw=setInterval(()=>{if(this.es&&!document.hidden&&Date.now()-(this.vivo||0)>80000)this.conectar()},30000);
     this.revisar();
   },
-  cerrar(){if(this.es){try{this.es.close()}catch(e){}this.es=null}clearInterval(this.ti);clearTimeout(this.tr)},
+  cerrar(){if(this.es){try{this.es.close()}catch(e){}this.es=null}clearInterval(this.ti);clearInterval(this.tw);clearTimeout(this.tr);clearTimeout(this.trc)},
   async derivar(correo,frase){
     const te=new TextEncoder(),dk=await scrypt.scrypt(te.encode(String(frase).normalize('NFKC')),te.encode('gestion-directiva|v1|'+String(correo).trim().toLowerCase()),32768,8,1,64);
     return {llave:dk.slice(0,32),carpeta:hexDe(dk.slice(32))};
@@ -1669,8 +1679,14 @@ async function syncVincular(b){
   if(document.body.contains(b)){b.disabled=false;b.textContent=txt}
 }
 document.addEventListener('focusout',()=>setTimeout(()=>{if(Sync.pendUI)Sync.refrescar()},350));
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Sync.activo())Sync.revisar()});
-window.addEventListener('online',()=>{if(Sync.activo())Sync.correr()});
+let ocultoDesde=0;
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ocultoDesde=Date.now();return}
+  /* tras un rato oculta (o con el equipo suspendido), la conexión en vivo puede haber quedado muerta: se abre otra */
+  if(Sync.activo()){if(ocultoDesde&&Date.now()-ocultoDesde>60000)Sync.conectar();else Sync.revisar()}
+  Puente.revisar();
+});
+window.addEventListener('online',()=>{if(Sync.activo())Sync.conectar();Puente.revisar()});
 
 /* ============ puente de correo: Gmail → aplicación → borradores de respuesta ============ */
 /* Un programa instalado en la cuenta de Google de la persona (herramientas/puente_correo.gs) deja los correos
@@ -1682,20 +1698,15 @@ const Puente={
   activo(){return !!(Sync.disponible()&&S.puente&&S.puente.secreto)},
   codigo(){return S.puente&&S.puente.secreto?'GD1.'+S.puente.secreto:''},
   url(p){return NUBE.replace(/\/+$/,'')+'/u/'+this.carpeta+'/'+p+'.json'},
-  cerrar(){if(this.es){try{this.es.close()}catch(e){}this.es=null}clearInterval(this.ti)},
+  cerrar(){this.listo=false;clearInterval(this.ti)},
   preparar(){
     if(!this.activo()){this.cerrar();this.sec=null;return}
-    if(this.sec===S.puente.secreto&&this.es)return;
+    if(this.sec===S.puente.secreto&&this.listo)return;
     this.cerrar();this.sec=S.puente.secreto;this.llave=b64a(this.sec);this.carpeta=hexDe(nacl.hash(this.llave)).slice(0,64);
     const g=lsG('prevs');this.revs=(g&&g.sec===this.sec)?g:{sec:this.sec};
-    try{
-      const es=new EventSource(this.url('idx'));this.es=es;let idx={};
-      const h=ev=>{try{const d=JSON.parse(ev.data);if(!d||this.es!==es)return;
-        if(d.path==='/'){if(ev.type==='put')idx=d.data||{};else Object.assign(idx,d.data||{})}else idx[String(d.path).replace(/^\//,'')]=d.data;
-        this.verIdx(idx)}catch(e){}};
-      es.addEventListener('put',h);es.addEventListener('patch',h);
-    }catch(e){}
-    this.ti=setInterval(()=>{if(!document.hidden)this.revisar()},120000);
+    /* el programa de Google escribe cada 5 minutos: basta con consultar cada minuto, sin otra conexión abierta */
+    this.listo=true;
+    this.ti=setInterval(()=>{if(!document.hidden)this.revisar()},60000);
     this.revisar();this.publicar();
   },
   async revisar(){if(!this.sec)return;try{this.verIdx(await Sync.pedir(this.url('idx'))||{})}catch(e){}},
