@@ -1049,7 +1049,7 @@ function vPerfil(){
   htmlCals()+'<div class="card"><h2>Oficios</h2><div class="grid2"><label class="f"><span>Próximo N° de oficio de este año</span>'+inp('perfil','siguienteOficio',P.siguienteOficio,'type="number" min="1" data-num="1"')+'</label></div><label class="f"><span>Destinatarios frecuentes (uno por línea: NOMBRE | CARGO)</span><textarea data-ctx="perfil" data-bind="destinatarios" data-parse="dest">'+esc((P.destinatarios||[]).map(d=>d.nombre+' | '+d.cargo).join('\n'))+'</textarea></label></div>'+
   '<div class="card"><h2>Actas</h2><label class="f"><span>Tipos de reunión (separados por coma)</span><input data-ctx="perfil" data-bind="tiposActa" data-parse="comas" value="'+esc((P.tiposActa||[]).join(', '))+'"></label><label class="f"><span>Áreas de los temas a abordar (separadas por coma)</span><input data-ctx="perfil" data-bind="areas" data-parse="comas" value="'+esc((P.areas||[]).join(', '))+'"></label><label class="f"><span>Nómina de participantes (uno por línea)</span><textarea data-ctx="perfil" data-bind="nomina" data-parse="lineas" style="min-height:180px">'+esc((P.nomina||[]).join('\n'))+'</textarea></label></div>'+
   '<div class="card"><h2>Contactos de WhatsApp</h2><label class="f"><span>Uno por línea: Nombre | número con código de país</span><textarea data-ctx="perfil" data-bind="contactos" data-parse="contactos" style="min-height:90px" placeholder="María Pérez | +56 9 1234 5678">'+esc((P.contactos||[]).map(c=>c.nombre+' | '+c.telefono).join('\n'))+'</textarea></label></div>'+
-  htmlSync()+htmlPuente()+htmlLibros()+'<div class="card"><h2>Respaldo</h2><p class="small muted">'+(Store.modo==='cuenta'?'Tus datos se guardan en tu cuenta y solo tú puedes verlos.':Store.modo==='local'?(AND?'Tus datos se guardan solo en este teléfono. Exporta un respaldo con frecuencia; queda en la carpeta Descargas.':'Tus datos se guardan solo en este navegador. Exporta un respaldo con frecuencia.'):'En esta vista no hay guardado: exporta un respaldo antes de cerrar.')+'</p><div class="row"><button class="btn" data-a="exportar">'+ic('down')+'Exportar respaldo</button><label class="btn">Importar respaldo<input type="file" accept=".json,application/json" data-import="1" hidden></label>'+(hayEjemplos()?'<button class="btn" data-a="borrar-ejemplos">Borrar ejemplos</button>':'')+'</div></div>';
+  htmlSync()+htmlPuente()+htmlLibros()+'<p class="small muted">Versión de la aplicación: '+(AND&&AND.version?esc(AND.version())+' · ':'')+VERSION_APP+'</p><div class="card"><h2>Respaldo</h2><p class="small muted">'+(Store.modo==='cuenta'?'Tus datos se guardan en tu cuenta y solo tú puedes verlos.':Store.modo==='local'?(AND?'Tus datos se guardan solo en este teléfono. Exporta un respaldo con frecuencia; queda en la carpeta Descargas.':'Tus datos se guardan solo en este navegador. Exporta un respaldo con frecuencia.'):'En esta vista no hay guardado: exporta un respaldo antes de cerrar.')+'</p><div class="row"><button class="btn" data-a="exportar">'+ic('down')+'Exportar respaldo</button><label class="btn">Importar respaldo<input type="file" accept=".json,application/json" data-import="1" hidden></label>'+(hayEjemplos()?'<button class="btn" data-a="borrar-ejemplos">Borrar ejemplos</button>':'')+'</div></div>';
 }
 
 /* ============ texto con formato simple ============ */
@@ -1646,8 +1646,8 @@ const Sync={
   poner(e){this.estado=e;pintarEstado();const el=$('#sync-estado');if(el)el.textContent=this.texto()},
   chip(){return {sinc:'Sincronizando…',ok:'Sincronizado',red:'Sin conexión · guardado aquí',fallo:'Error al sincronizar · guardado aquí',llave:'No se pudo descifrar',permiso:'La nube rechazó el acceso'}[this.estado]||'Sincronización activa'},
   texto(){
-    const e=this.estado;
-    const d=this.det?' Detalle: '+this.det+'.':'';
+    const e=this.estado,n=Instancias.cuantas();
+    const d=(this.det?' Detalle: '+this.det+'.':'')+(n&&(e==='red'||e==='fallo')?' Ojo: la aplicación está abierta también en '+(n===1?'otra ventana o pestaña':n+' ventanas o pestañas más')+' de este navegador; ciérralas y deja una sola.':'');
     return e==='sinc'?'Sincronizando…':e==='red'?'Sin conexión con la nube. Los cambios quedan guardados aquí y se envían cuando vuelva la conexión.'+d:
       e==='fallo'?'La aplicación tuvo un error al sincronizar. Los cambios quedan guardados aquí; se reintenta cada minuto.'+d:
       e==='llave'?'Los datos de la nube no se pudieron descifrar con esta frase. Desvincula y vuelve a vincular con la frase correcta.':
@@ -2409,7 +2409,24 @@ async function capacidades(){
   u('downloads').then(x=>{if(x){S.dl=x;document.body.classList.add('has-dl')}});
   u('mcp').then(async x=>{if(!x)return;try{const r=await x.listTools(),n=((r&&r.servers)||[]).map(s=>s.server);if(n.indexOf('Google Calendar')>=0){S.mcp=x;document.body.classList.add('has-cal')}if(n.indexOf('Google Drive')>=0){S.drv=x;document.body.classList.add('has-drive')}}catch(e){}});
 }
+/* Detecta si la aplicación está abierta en varias ventanas o pestañas del mismo navegador:
+   cada una mantiene su propia conexión con la nube, y muchas a la vez pueden trabar la sincronización. */
+const VERSION_APP='18-11-2026 (c)';
+const Instancias={id:Math.random().toString(36).slice(2),otras:{},
+  iniciar(){
+    try{
+      this.bc=new BroadcastChannel('gestion-directiva');
+      this.bc.onmessage=e=>{const m=e.data||{};if(!m.id||m.id===this.id)return;
+        if(m.t==='chao'){delete this.otras[m.id]}else{const nueva=!this.otras[m.id];this.otras[m.id]=Date.now();if(m.t==='hola')this.bc.postMessage({t:'aqui',id:this.id});if(nueva&&!AND)toast('La aplicación también está abierta en otra ventana o pestaña. Conviene dejar una sola.')}};
+      this.bc.postMessage({t:'hola',id:this.id});
+      setInterval(()=>{try{this.bc.postMessage({t:'aqui',id:this.id})}catch(e){}},30000);
+      window.addEventListener('pagehide',()=>{try{this.bc.postMessage({t:'chao',id:this.id})}catch(e){}});
+    }catch(e){}
+  },
+  cuantas(){const t=Date.now()-75000;return Object.keys(this.otras).filter(k=>this.otras[k]>t).length}
+};
 async function arrancar(){
+  Instancias.iniciar();
   render();capacidades();
   await Store.init();
   const v=await Promise.all(CLAVES.map(k=>Store.leer(k)));
