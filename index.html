@@ -1482,7 +1482,7 @@ function crearAvisos(){
 /* ============ sincronización cifrada entre dispositivos ============ */
 /* La dirección de la nube se fija al construir la app o la página; en el prototipo de Claude queda sin configurar.
    En la nube solo hay texto cifrado: la llave sale del correo y la frase secreta, y nunca se envía. */
-const NUBE='http://127.0.0.1:8765';
+const NUBE='https://gestion-directiva-1ce44-default-rtdb.firebaseio.com';
 const OBJ=['perfil','logo','firma','puente'];
 function lsG(k){try{const v=localStorage.getItem('gd_'+k);return v==null?null:JSON.parse(v)}catch(e){return null}}
 function lsS(k,v){try{localStorage.setItem('gd_'+k,JSON.stringify(v))}catch(e){}}
