@@ -183,6 +183,9 @@ table.tabla input,table.tabla textarea{border:1px solid var(--line);background:v
 .adjs.cmp .adj-v{width:44px;height:44px}.adj-v.otro{cursor:default;opacity:.75}
 .adj-v img{width:100%;height:100%;object-fit:cover;display:block}.adj-ic{font-size:.72rem;font-weight:700;color:var(--muted)}
 .adj-t{display:flex;flex-direction:column;gap:2px;min-width:0}.adj-t>.small:first-child{overflow-wrap:anywhere}.adjs.cmp .adj-t{display:none}
+.lamina{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;margin:12px 0}.lamina svg{display:block;width:100%;height:auto}
+@page{size:landscape;margin:8mm}
+@media print{body.imp-lam *{visibility:hidden!important}body.imp-lam #lamina,body.imp-lam #lamina *{visibility:visible!important}body.imp-lam #lamina{position:fixed;left:0;top:0;width:100%;border:0;margin:0}}
 .tabla{overflow:auto}.tabla table{border-collapse:collapse;font-size:.82rem}.tabla td{border:1px solid var(--line);padding:4px 8px;vertical-align:top;white-space:nowrap}
 .prop{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
 .inl{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 10px;min-height:42px;width:100%}
@@ -1909,13 +1912,134 @@ function pResumen(P){
     (sol.length?'<div class="card"><h2>Permisos por autorizar</h2><div class="lista">'+sol.slice(0,20).map(p=>filaPerm(p)).join('')+'</div></div>':'')+
     (tram.length?'<div class="card"><h2>Licencias en trámite</h2><div class="lista">'+tram.slice(0,20).map(l=>filaLic(l)).join('')+'</div></div>':'');
 }
+/* ============ lámina semanal de ausencias del personal ============ */
+const GRUPOS_L=[['doc','Docentes'],['asi','Asistentes de la educación'],['dir','Equipo directivo'],['otro','Otros']];
+const PRIO_L={sol:1,perm:2,lic:3};let TODOS_L=[];
+const COL_L={lic:'#b83227',perm:'#cf7f00',sol:'#cf7f00'};
+function grupoEst(e){const n=nrm(e);return /directiv/.test(n)?'dir':/docen|educador|profesor/.test(n)?'doc':/asisten|auxiliar|administrativ|paradoc/.test(n)?'asi':'otro'}
+function lunesDe(f){const d=new Date(f+'T12:00:00').getDay();return masDias(f,d===0?1:d===6?2:1-d)}
+/* quién falta cada día de la semana, separado en mañana y tarde: C[grupo][día][0|1] = {nombre: 'lic'|'perm'|'sol'} */
+function ausLamina(P,lunes){
+  const est={},dot={doc:0,asi:0,dir:0,otro:0};
+  P.func.forEach(f=>{const g=grupoEst(f.estamento);est[nrm(f.nombre)]=g;dot[g]++});
+  const dias=[0,1,2,3,4].map(i=>masDias(lunes,i)),C={};
+  GRUPOS_L.forEach(g=>{C[g[0]]=dias.map(()=>[{},{}])});
+  const marcar=(o,ini,fin,mit,tipo)=>{if(!ini||!o.nombre)return;dias.forEach((d,i)=>{if(d<ini||d>(fin||ini))return;const c=C[est[nrm(o.nombre)]||'otro'][i];mit.forEach(m=>{const p=c[m][o.nombre];if(!p||PRIO_L[tipo]>PRIO_L[p])c[m][o.nombre]=tipo})})};
+  P.lic.forEach(l=>marcar(l,l.ini,l.fin,[0,1],'lic'));
+  P.perm.forEach(p=>{const e=nrm(p.estado);if(/rechaz|anulad/.test(e))return;const j=nrm(p.jornada);marcar(p,p.ini,p.fin,/manana/.test(j)?[0]:/tarde/.test(j)?[1]:[0,1],/solicit|pendient/.test(e)?'sol':'perm')});
+  const hay=g=>C[g].some(d=>d.some(m=>Object.keys(m).length));
+  return {dias,C,dot,grupos:GRUPOS_L.filter(g=>g[0]!=='otro'?(dot[g[0]]>0||hay(g[0])):hay(g[0]))};
+}
+function tituloSemanaL(lunes){const v=masDias(lunes,4),a=lunes.split('-'),b=v.split('-');return 'Semana del '+Number(a[2])+(a[1]!==b[1]?' de '+MESES[Number(a[1])-1]:'')+' al '+Number(b[2])+' de '+MESES[Number(b[1])-1]+' de '+b[0]}
+function mezclaHex(a,b,t){const p=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)),x=p(a),y=p(b);return '#'+x.map((v,i)=>Math.round(v+(y[i]-v)*t).toString(16).padStart(2,'0')).join('')}
+function lineasTxt(txt,max){const o=[];String(txt).split(/\s+/).forEach(w=>{const u=o.length?o[o.length-1]:null;if(u!==null&&(u+' '+w).length<=max)o[o.length-1]=u+' '+w;else o.push(w)});return o}
+/* nombre breve para la lámina: nombre y la inicial del apellido; si se repite en el personal, nombre y apellido */
+function nombreLam(n,todos){const t=String(n).trim().split(/\s+/);if(t.length<2)return t[0]||'';const c=t[0]+' '+t[1].charAt(0)+'.';return todos.filter(x=>{const u=String(x).trim().split(/\s+/);return u.length>1&&u[0]+' '+u[1].charAt(0)+'.'===c}).length>1?t[0]+' '+t[1]:c}
+function nombreCorto(n){const t=String(n).trim().split(/\s+/);const s=t.length>2?t[0]+' '+t[1]+' '+t[2].charAt(0)+'.':t.join(' ');return s.length>24?s.slice(0,23)+'…':s}
+function svgLamina(P,lunes,conNombres){
+  TODOS_L=P.func.map(f=>f.nombre).concat(P.lic.map(l=>l.nombre),P.perm.map(p=>p.nombre));
+  const A=ausLamina(P,lunes),W=1600,H=1000,pr=/^#[0-9a-f]{6}$/i.test((S.perfil.colores||{}).primario)?S.perfil.colores.primario:'#2f5d7c';
+  const tinta=lum(pr)>0.45?'#1a1a1a':'#ffffff',X0=40,LW=270,CW=(W-X0*2-LW)/5,Y0=176,HD=60,FOOT=118;
+  const filas=Math.max(1,A.grupos.length*2),RH=Math.min(170,Math.floor((H-Y0-HD-FOOT)/filas)),hoy=hoyISO();
+  const t=(x,y,s,o)=>'<text x="'+x+'" y="'+y+'"'+(o||'')+'>'+esc(s)+'</text>';
+  let g='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" font-family="Arial, Helvetica, sans-serif" role="img" aria-label="Ausencias de personal, '+esc(tituloSemanaL(lunes))+'">'+
+    '<rect width="'+W+'" height="'+H+'" fill="#ffffff"/><rect width="'+W+'" height="144" fill="'+pr+'"/>';
+  let tx=X0;
+  if(S.logo&&S.logo.src){g+='<rect x="'+X0+'" y="20" width="104" height="104" rx="10" fill="#ffffff"/><image x="'+(X0+6)+'" y="26" width="92" height="92" preserveAspectRatio="xMidYMid meet" href="'+esc(S.logo.src)+'" xlink:href="'+esc(S.logo.src)+'"/>';tx=X0+128}
+  g+=t(tx,68,S.perfil.nombre||'Establecimiento',' font-size="38" font-weight="700" fill="'+tinta+'"')+t(tx,112,'Ausencias del personal · '+tituloSemanaL(lunes),' font-size="27" fill="'+tinta+'"');
+  /* encabezado de días */
+  const tot=A.dias.map((d,i)=>{const s={};A.grupos.forEach(gr=>{[0,1].forEach(m=>Object.keys(A.C[gr[0]][i][m]).forEach(n=>{s[n]=1}))});return Object.keys(s).length});
+  g+=t(X0+12,Y0+36,'Estamento',' font-size="17" font-weight="700" fill="#5b6459"');
+  A.dias.forEach((d,i)=>{const x=X0+LW+i*CW,dd=new Date(d+'T12:00:00'),es=d===hoy;
+    g+='<rect x="'+(x+3)+'" y="'+Y0+'" width="'+(CW-6)+'" height="'+(HD-6)+'" rx="8" fill="'+(es?pr:'#eef0ea')+'"/>'+
+      t(x+CW/2,Y0+26,DIAS[dd.getDay()].replace(/^./,c=>c.toUpperCase())+' '+dd.getDate(),' text-anchor="middle" font-size="22" font-weight="700" fill="'+(es?tinta:'#1b201a')+'"')+
+      t(x+CW/2,Y0+47,tot[i]?tot[i]+(tot[i]===1?' persona ausente':' personas ausentes'):'Sin ausencias',' text-anchor="middle" font-size="15" fill="'+(es?tinta:'#5b6459')+'"')});
+  /* filas: por estamento, mañana y tarde */
+  A.grupos.forEach((gr,gi)=>{
+    const y0=Y0+HD+gi*2*RH,dot=A.dot[gr[0]];
+    g+='<rect x="'+X0+'" y="'+(y0+3)+'" width="'+(LW-96)+'" height="'+(2*RH-6)+'" rx="8" fill="#f3f4f0"/>';
+    const ln=lineasTxt(gr[1],13),sub=gr[0]==='otro'?['No figuran en','«Funcionarios»']:[dot?'Dotación: '+dot:'Sin dotación'],yl=y0+RH-((ln.length+sub.length)*22)/2+16;
+    ln.forEach((x,k)=>{g+=t(X0+14,yl+k*25,x,' font-size="21" font-weight="700" fill="#1b201a"')});
+    sub.forEach((x,k)=>{g+=t(X0+14,yl+ln.length*25+4+k*19,x,' font-size="15" fill="#5b6459"')});
+    [0,1].forEach(m=>{
+      const y=y0+m*RH;
+      g+=t(X0+LW-84,y+RH/2+6,m?'Tarde':'Mañana',' font-size="16" fill="#5b6459"');
+      A.dias.forEach((d,i)=>{
+        const x=X0+LW+i*CW,M=A.C[gr[0]][i][m],N=Object.keys(M).sort((a,b)=>PRIO_L[M[b]]-PRIO_L[M[a]]||a.localeCompare(b)),n=N.length,r=dot?n/dot:(n?1:0);
+        g+='<rect x="'+(x+3)+'" y="'+(y+3)+'" width="'+(CW-6)+'" height="'+(RH-6)+'" rx="8" fill="'+(n?mezclaHex('#fdf0ec','#f1b3a5',Math.min(1,r*3)):'#fafbf8')+'" stroke="'+(d===hoy?pr:'#d5d9cf')+'" stroke-width="'+(d===hoy?2.5:1)+'"/>';
+        g+='<text x="'+(x+16)+'" y="'+(y+42)+'"><tspan font-size="34" font-weight="700" fill="'+(n?'#8f2d1f':'#a3aa9f')+'">'+n+'</tspan>'+(dot?'<tspan font-size="16" fill="#5b6459"> de '+dot+'</tspan>':'')+'</text>';
+        if(!n)return;
+        if(conNombres){
+          /* nombres seguidos, en el color de su tipo (rojo: licencia; naranjo: permiso; cursiva: por autorizar) */
+          const maxL=Math.max(1,Math.floor((RH-50)/19)),anchoC=Math.floor((CW-30)/8.1),L=[[]];let largo=0,k=0;
+          for(;k<N.length;k++){const nm=nombreLam(N[k],TODOS_L)+(k<N.length-1?',':''),len=nm.length+1;
+            if(largo+len>anchoC&&L[L.length-1].length){if(L.length===maxL)break;L.push([]);largo=0}
+            L[L.length-1].push([nm,M[N[k]]]);largo+=len}
+          if(k<N.length){const u=L[L.length-1],resto=()=>' y '+(N.length-k)+' más';while(u.length>1&&u.reduce((a,b)=>a+b[0].length+1,0)+resto().length>anchoC){u.pop();k--}u.push([resto().trim(),'mas'])}
+          L.forEach((fila,j)=>{g+='<text x="'+(x+16)+'" y="'+(y+64+j*19)+'" font-size="15">'+fila.map((e,q)=>'<tspan'+(q?' dx="4"':'')+' fill="'+(e[1]==='lic'?'#9e2a1f':e[1]==='mas'?'#5b6459':'#8a5600')+'"'+(e[1]==='sol'||e[1]==='mas'?' font-style="italic"':'')+(e[1]==='lic'?' font-weight="700"':'')+'>'+esc(e[0])+'</tspan>').join('')+'</text>'});
+        }else{
+          const por=Math.max(1,Math.floor((CW-34)/26)),y1=y+Math.min(70,RH-19),cab=Math.max(1,Math.floor((RH-(y1-y)+10)/26))*por;
+          N.slice(0,N.length>cab?cab-1:cab).forEach((nm,k)=>{const cx=x+26+(k%por)*26,cy=y1+Math.floor(k/por)*26,tp=M[nm];
+            g+=tp==='sol'?'<circle cx="'+cx+'" cy="'+cy+'" r="8.5" fill="#ffffff" stroke="'+COL_L.sol+'" stroke-width="3"/>':'<circle cx="'+cx+'" cy="'+cy+'" r="10" fill="'+COL_L[tp]+'"/>'});
+          if(N.length>cab){const k=cab-1;g+=t(x+26+(k%por)*26,y1+6+Math.floor(k/por)*26,'+'+(N.length-cab+1),' text-anchor="middle" font-size="16" font-weight="700" fill="#5b6459"')}
+        }
+      });
+    });
+    if(gi<A.grupos.length-1)g+='<line x1="'+X0+'" x2="'+(W-X0)+'" y1="'+(y0+2*RH)+'" y2="'+(y0+2*RH)+'" stroke="#9aa294" stroke-width="2" stroke-dasharray="2 6"/>';
+  });
+  /* pie: leyenda, resumen y fuente */
+  const sem={lic:{},perm:{}};A.grupos.forEach(gr=>A.C[gr[0]].forEach(d=>d.forEach(m=>Object.keys(m).forEach(n=>{sem[m[n]==='lic'?'lic':'perm'][n]=1}))));
+  const nl=Object.keys(sem.lic).length,np=Object.keys(sem.perm).filter(n=>!sem.lic[n]).length,yf=H-FOOT+30;
+  g+='<line x1="'+X0+'" x2="'+(W-X0)+'" y1="'+(yf-26)+'" y2="'+(yf-26)+'" stroke="#d5d9cf" stroke-width="1.5"/>'+
+    '<circle cx="'+(X0+10)+'" cy="'+(yf-6)+'" r="10" fill="'+COL_L.lic+'"/>'+t(X0+28,yf,'Licencia médica',' font-size="18" fill="#1b201a"')+
+    '<circle cx="'+(X0+208)+'" cy="'+(yf-6)+'" r="10" fill="'+COL_L.perm+'"/>'+t(X0+226,yf,'Permiso',' font-size="18" fill="#1b201a"')+
+    '<circle cx="'+(X0+348)+'" cy="'+(yf-6)+'" r="8.5" fill="#ffffff" stroke="'+COL_L.sol+'" stroke-width="3"/>'+t(X0+366,yf,'Permiso por autorizar',' font-size="18" fill="#1b201a"')+
+    t(X0+600,yf,conNombres?'Nombres en rojo y negrita: licencia; en naranjo: permiso; en cursiva: por autorizar. Medio día cuenta solo en su jornada.':'Cada punto es una persona. Medio día cuenta solo en la mañana o en la tarde.',' font-size="16" fill="#5b6459"')+
+    t(X0,yf+34,'En la semana: '+(nl?nl+(nl===1?' persona':' personas')+' con licencia':'nadie con licencia')+' y '+(np?np+(np===1?' persona':' personas')+' con permiso':'nadie con permiso')+'.',' font-size="18" font-weight="700" fill="#1b201a"')+
+    t(X0,yf+62,'Fuente: '+(P.L&&P.L.nombre?'«'+P.L.nombre+'»':'planilla de permisos y licencias')+(P.L&&P.L.rev?', leída el '+fechaHoraCorta(new Date(P.L.rev).toISOString()):'')+' · Generada el '+fechaHoraCorta(new Date().toISOString())+(conNombres?' · Incluye nombres: uso interno del equipo directivo.':''),' font-size="14" fill="#5b6459"')+
+    t(W-X0,yf+62,'Gestión Directiva',' text-anchor="end" font-size="14" font-weight="700" fill="#5b6459"');
+  return g+'</svg>';
+}
+function textoLamina(P,lunes,conNombres){
+  const A=ausLamina(P,lunes),o=['*Ausencias del personal – '+(S.perfil.nombre||'')+'*',tituloSemanaL(lunes),''];
+  A.dias.forEach((d,i)=>{
+    const dd=new Date(d+'T12:00:00'),partes=[];
+    A.grupos.forEach(gr=>{
+      const M=A.C[gr[0]][i],nombres=Array.from(new Set(Object.keys(M[0]).concat(Object.keys(M[1]))));if(!nombres.length)return;
+      const medio=nombres.filter(n=>!(n in M[0])||!(n in M[1])).length,et=gr[0]==='doc'?(nombres.length===1?'docente':'docentes'):gr[0]==='asi'?(nombres.length===1?'asistente':'asistentes'):gr[0]==='dir'?(nombres.length===1?'directivo':'directivos'):'sin estamento';
+      let s=nombres.length+' '+et+(medio?' ('+medio+' medio día)':'');
+      if(conNombres)s+=': '+nombres.map(n=>{const tp=M[0][n]||M[1][n],j=!(n in M[0])?', tarde':!(n in M[1])?', mañana':'';return nombreCorto(n)+' ('+(tp==='lic'?'licencia':tp==='sol'?'permiso por autorizar':'permiso')+j+')'}).join(', ');
+      partes.push(s);
+    });
+    o.push('• '+DIAS[dd.getDay()].replace(/^./,c=>c.toUpperCase())+' '+dd.getDate()+': '+(partes.length?partes.join(' · '):'sin ausencias'));
+  });
+  return o.concat(['',firmaWA()]).join('\n').trim();
+}
+function pngLamina(svg,escala){
+  return new Promise((ok,no)=>{const im=new Image();
+    im.onload=()=>{try{const c=document.createElement('canvas');c.width=Math.round(1600*escala);c.height=Math.round(1000*escala);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);c.toBlob(b=>b?ok(b):no(new Error('png')),'image/png')}catch(e){no(e)}};
+    im.onerror=()=>no(new Error('svg'));im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+}
+function pLamina(P){
+  const l=S.semL||lunesDe(hoyISO()),actual=l===lunesDe(hoyISO());
+  return '<div class="card"><div class="row between"><div class="row"><button class="btn sm" data-a="lam-sem" data-d="-7">‹ Anterior</button><button class="btn sm'+(actual?' pri':'')+'" data-a="lam-sem" data-d="0">Esta semana</button><button class="btn sm" data-a="lam-sem" data-d="7">Siguiente ›</button></div>'+
+    '<label class="chk"><input type="checkbox" data-a-change="lam-nom"'+(S.lamNom?' checked':'')+'> <span>Incluir nombres</span></label></div>'+
+    (S.lamNom?'<div class="aviso">Con nombres, la lámina muestra quién tiene licencia médica, que es información de salud del personal. Úsala solo con el equipo directivo; no la publiques en murales ni en grupos.</div>':'')+
+    '<div id="lamina" class="lamina">'+svgLamina(P,l,S.lamNom)+'</div>'+
+    '<div class="row"><button class="btn pri" data-a="lam-png">'+ic('down')+'Descargar imagen</button>'+(AND?'<button class="btn" data-a="lam-compartir">'+ic('send')+'Compartir imagen</button>':'<button class="btn" data-a="lam-imprimir">Imprimir</button>')+'<button class="btn" data-a="lam-wa">'+ic('send')+'Resumen por WhatsApp</button></div>'+
+    '<p class="small muted">Cuenta licencias y permisos de la planilla (también los registrados aquí que aún no se anotan). No incluye horas compensatorias ni permisos rechazados.</p></div>';
+}
+async function lamArchivo(){
+  const P=personal();if(!P)return null;const l=S.semL||lunesDe(hoyISO());
+  return {blob:await pngLamina(svgLamina(P,l,S.lamNom),1.5),nombre:'Ausencias_personal_'+l+(S.lamNom?'_con_nombres':'')+'.png'};
+}
 function vPersonal(){
   const P=personal(),cab='<div class="row between"><h1>Permisos y licencias</h1>'+(P?'<button class="btn pri" data-a="reg-nuevo">'+ic('plus')+'Registrar</button>':'')+'</div>';
   if(!P)return cab+avisoLibro('personal');
   if(!P.tF&&!P.tP&&!P.tL)return cab+pieLibro('personal')+'<div class="aviso">La planilla llegó, pero no se reconocieron las hojas «Funcionarios», «Permisos» ni «Licencias» (cada una debe tener una fila de títulos que empiece con «Funcionario/a»).</div>';
-  const T=[['resumen','Resumen'],['funcionarios','Funcionarios ('+P.func.length+')'],['permisos','Permisos ('+P.perm.length+')'],['licencias','Licencias ('+P.lic.length+')'],['horas','Horas comp.']];
+  const T=[['resumen','Resumen'],['lamina','Lámina semanal'],['funcionarios','Funcionarios ('+P.func.length+')'],['permisos','Permisos ('+P.perm.length+')'],['licencias','Licencias ('+P.lic.length+')'],['horas','Horas comp.']];
   return cab+pieLibro('personal')+'<div class="tabs">'+T.map(t=>'<button class="btn sm'+(S.tabP===t[0]?' pri':'')+'" data-a="tab-p" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'+
-    (S.tabP==='resumen'?pResumen(P):'<label class="f"><span>Buscar</span><input id="bus-p" data-a-input="bus-p" value="'+esc(S.busP)+'" placeholder="Nombre, tipo o estado" autocomplete="off"></label><div class="lista" id="lp">'+listaP()+'</div>');
+    (S.tabP==='resumen'?pResumen(P):S.tabP==='lamina'?pLamina(P):'<label class="f"><span>Buscar</span><input id="bus-p" data-a-input="bus-p" value="'+esc(S.busP)+'" placeholder="Nombre, tipo o estado" autocomplete="off"></label><div class="lista" id="lp">'+listaP()+'</div>');
 }
 function hojaFunc(nombre){
   const P=personal();if(!P)return;const f=P.func.find(x=>x.nombre===nombre)||{nombre:nombre},de=L=>L.filter(x=>x.nombre===nombre);
@@ -2216,6 +2340,11 @@ const ACC={
   'drive-usar':b=>{const f=(S.drvRes||[])[Number(b.dataset.i)];if(!f)return;S.docBorr={nombre:f.title.replace(/\.(docx?|pdf|xlsx?|pptx?|odt)$/i,''),url:urlLimpia(f.viewUrl)};S.tab='docs';cerrarHoja();render();toast('Indica la fecha del aviso y agrégalo.')},
   'crear-avisos':()=>crearAvisos(),
   'tab-p':b=>{S.tabP=b.dataset.t;S.busP='';render()},
+  'lam-sem':b=>{const d=Number(b.dataset.d)||0,h=lunesDe(hoyISO());S.semL=d?masDias(S.semL||h,d):h;render()},
+  'lam-png':async()=>{try{const a=await lamArchivo();if(!a)return;if(S.dl&&S.dl.save){await S.dl.save({filename:a.nombre,data:a.blob})}else{const u=URL.createObjectURL(a.blob),e=document.createElement('a');e.href=u;e.download=a.nombre;document.body.appendChild(e);e.click();e.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}toast(AND?'Imagen guardada en la carpeta Descargas del teléfono.':'Imagen descargada.')}catch(e){if(e&&e.code==='declined')return;toast('No se pudo crear la imagen.')}},
+  'lam-compartir':async()=>{try{const a=await lamArchivo();if(!a||!AND)return;if(!AND.archivo(a.nombre,'image/png',await aBase64(a.blob),true))toast('No se pudo compartir la imagen.')}catch(e){toast('No se pudo crear la imagen.')}},
+  'lam-imprimir':()=>{document.body.classList.add('imp-lam');const fin=()=>{document.body.classList.remove('imp-lam');window.removeEventListener('afterprint',fin)};window.addEventListener('afterprint',fin);window.print();setTimeout(fin,1500)},
+  'lam-wa':()=>{const P=personal();if(!P)return;const l=S.semL||lunesDe(hoyISO());hojaWA(textoLamina(P,l,S.lamNom),'Ausencias · '+tituloSemanaL(l))},
   'func-ver':b=>hojaFunc(b.dataset.n),
   'reg-nuevo':b=>hojaReg(b.dataset.tipo||'permiso',b.dataset.n||''),
   'reg-guardar':()=>guardarReg(),
@@ -2349,6 +2478,7 @@ document.addEventListener('change',e=>{
   if(el.dataset.aChange==='wa'){const c=(S.perfil.contactos||[])[Number(el.value)];if(c&&el.value!==''){const n=$('#wa-n');if(n)n.value=c.telefono}actualizarWA();return}
   if(el.dataset.aChange==='ver-frase'){const f=$('#sy-f');if(f)f.type=el.checked?'text':'password';return}
   if(el.dataset.aChange==='sem-r'){S.semR=el.value;render();return}
+  if(el.dataset.aChange==='lam-nom'){S.lamNom=el.checked;render();return}
   if(el.dataset.aChange==='caldef'){S.perfil.calDefecto=el.value;Store.guardar('perfil');render();return}
   if(el.dataset.aChange==='ia-ok'){const x=actual();if(x&&el.checked){x.iaSinRevisar=false;Store.guardar(S.ed.t==='oficio'?'oficios':'actas');render()}return}
   if(el.dataset.img&&el.files&&el.files[0]){cargarImagen(el.files[0],el.dataset.img);return}
@@ -2388,7 +2518,7 @@ window.addEventListener('hashchange',()=>{const v=vistaActual();if(S.ed&&!((S.ed
 
 /* ============ arranque ============ */
 function aBase64(d){return new Promise((ok,no)=>{if(typeof d==='string'){try{ok(btoa(unescape(encodeURIComponent(d))))}catch(e){no(e)}return}const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(',')[1]||'');fr.onerror=no;fr.readAsDataURL(d instanceof Blob?d:new Blob([d]))})}
-function mimeDe(n){return /\.docx$/i.test(n)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':/\.json$/i.test(n)?'application/json':'application/octet-stream'}
+function mimeDe(n){return /\.png$/i.test(n)?'image/png':/\.docx$/i.test(n)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':/\.json$/i.test(n)?'application/json':'application/octet-stream'}
 window.__aviso=m=>toast(String(m||''));
 window.__dictado=t=>{const el=dictDestino;if(!el||!document.body.contains(el))return;const x=String(t||'').trim();if(!x)return;el.value=(el.value&&!/\s$/.test(el.value)?el.value+' ':el.value)+x;el.dispatchEvent(new Event('input',{bubbles:true}))};
 window.__atras=()=>{if($('#capa').innerHTML){cerrarHoja();return true}if(S.ed){S.ed=null;render();return true}if(vistaActual()!=='hoy'){location.hash='#hoy';return true}return false};
@@ -2411,7 +2541,7 @@ async function capacidades(){
 }
 /* Detecta si la aplicación está abierta en varias ventanas o pestañas del mismo navegador:
    cada una mantiene su propia conexión con la nube, y muchas a la vez pueden trabar la sincronización. */
-const VERSION_APP='18-11-2026 (c)';
+const VERSION_APP='27-11-2026';
 const Instancias={id:Math.random().toString(36).slice(2),otras:{},
   iniciar(){
     try{

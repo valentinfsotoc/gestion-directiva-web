@@ -1,5 +1,5 @@
 /* Guarda la aplicación en el PC para que abra sin conexión. La página principal se pide primero a la red para recibir las actualizaciones. */
-const CACHE = 'gd-db9fde59b159';
+const CACHE = 'gd-98c87ef9f464';
 const BASE = ['./', 'index.html', 'docx.umd.js', 'manifest.webmanifest', 'icono-192.png', 'icono-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(BASE)).then(() => self.skipWaiting()));
